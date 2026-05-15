@@ -1,0 +1,48 @@
+.PHONY: dev dev-backend dev-frontend db migrate lint install stop restart
+
+# Start everything
+dev:
+	$(MAKE) -j3 db dev-backend dev-frontend
+
+db:
+	docker compose up -d postgres
+
+dev-backend:
+	cd backend && PYTHONPATH=. uvicorn app.main:app --reload --port 8001
+
+dev-frontend:
+	cd frontend && npm run dev -- --port 3001
+
+install:
+	cd backend && pip install -e ".[dev]"
+	cd frontend && npm install
+
+migrate:
+	cd backend && PYTHONPATH=. alembic upgrade head
+
+migrate-new:
+	cd backend && PYTHONPATH=. alembic revision --autogenerate -m "$(msg)"
+
+lint:
+	cd backend && python -m py_compile app/main.py
+	cd frontend && npx next lint
+
+test-backend:
+	cd backend && PYTHONPATH=. pytest -v
+
+test-frontend:
+	cd frontend && npx vitest run
+
+# Stop all services
+stop:
+	-pkill -f "uvicorn app.main:app" 2>/dev/null
+	-pkill -f "next dev.*--port 3001" 2>/dev/null
+	docker compose down
+
+# Restart everything
+restart: stop
+	sleep 1
+	$(MAKE) dev
+
+hash-password:
+	@python -c "import bcrypt, getpass; print(bcrypt.hashpw(getpass.getpass('Password: ').encode(), bcrypt.gensalt()).decode())"
