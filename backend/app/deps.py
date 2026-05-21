@@ -1,11 +1,9 @@
 from datetime import datetime, timezone
 
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Cookie, HTTPException, status
 from jose import JWTError, jwt
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.database import get_db
 
 
 async def get_current_admin(access_token: str | None = Cookie(default=None)) -> str:

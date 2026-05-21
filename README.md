@@ -301,16 +301,23 @@ Dark mode is available by adding the `dark` class to `<html>`. The CSS variables
 2. Set environment variables on each Railway service:
    - **backend**: `DATABASE_URL` (from Postgres plugin), `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `COOKIE_SECURE=true`, `CORS_ORIGINS=["https://your-frontend.up.railway.app"]`
    - **frontend**: `API_URL` (internal Railway URL of the backend, e.g. `http://backend.railway.internal:8001`)
-3. Add two secrets to your GitHub repo: `RAILWAY_TOKEN` and `RAILWAY_PROJECT_ID`
-4. Push to `main` — GitHub Actions deploys both services
+3. Add two secrets to your GitHub repo:
+   - **`RAILWAY_TOKEN`** — a **workspace/account token** (Railway → Account
+     Settings → Tokens). *Not* a per-project token. The workflow feeds it to the
+     CLI as `RAILWAY_API_TOKEN`; a project token in this slot fails with
+     `Invalid RAILWAY_TOKEN`. One account token covers the whole project.
+   - **`RAILWAY_PROJECT_ID`** — the project's ID (Railway project → Settings).
+4. Push to `main` — GitHub Actions runs the tests, then deploys both services.
 
 ### How the deploy works
 
-The `.github/workflows/deploy.yml` workflow:
-- Runs on every push to `main`
-- Deploys backend and frontend as separate parallel jobs
-- Uses `railway up --service <name>` which builds the Dockerfile on Railway's infrastructure
-- Railway detects the `Dockerfile` in each service directory and builds from it
+The `.github/workflows/deploy.yml` workflow (`CI & Deploy`):
+- On every push **and pull request**, runs `test-backend` (ruff + pytest) and
+  `test-frontend` (typecheck, vitest, build).
+- `deploy-backend` / `deploy-frontend` `needs` both test jobs and run **only on
+  pushes to `main`** — so a red test run, or any PR, never deploys.
+- Deploy uses `railway up --service <name>`, which builds each service's
+  Dockerfile on Railway's infrastructure.
 
 ### Railway environment notes
 

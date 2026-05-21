@@ -24,8 +24,8 @@ migrate-new:
 	cd backend && PYTHONPATH=. alembic revision --autogenerate -m "$(msg)"
 
 lint:
-	cd backend && python -m py_compile app/main.py
-	cd frontend && npx next lint
+	cd backend && ruff check app/ tests/
+	cd frontend && npx tsc --noEmit
 
 test-backend:
 	cd backend && PYTHONPATH=. pytest -v
