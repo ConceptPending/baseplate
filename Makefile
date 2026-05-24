@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend db migrate lint install install-hooks stop restart
+.PHONY: dev dev-backend dev-frontend db migrate lint install install-hooks generate-client stop restart
 
 # Start everything
 dev:
@@ -19,6 +19,16 @@ install:
 
 install-hooks:
 	pre-commit install
+
+# Regenerate frontend TypeScript types from the FastAPI OpenAPI spec.
+# Run after changes to backend Pydantic schemas. The output file is
+# committed so LLMs and tests can rely on it without running the
+# generator. CI doesn't run this — drift gets caught at next manual
+# regen + the resulting tsc errors.
+generate-client:
+	cd backend && DEBUG=true PYTHONPATH=. python scripts/dump_openapi.py > /tmp/baseplate-openapi.json
+	cd frontend && npx openapi-typescript /tmp/baseplate-openapi.json -o src/lib/api-types.ts
+	rm -f /tmp/baseplate-openapi.json
 
 migrate:
 	cd backend && PYTHONPATH=. alembic upgrade head

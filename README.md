@@ -248,6 +248,7 @@ async def create_item(data: ItemCreate, admin=Depends(get_current_admin), db=Dep
 | `make db`                    | Start Postgres container on port 5433           |
 | `make install`               | `pip install -e ".[dev]"` + `npm install`       |
 | `make install-hooks`         | Register pre-commit hooks (ruff, tsc, eslint)   |
+| `make generate-client`       | Regenerate `frontend/src/lib/api-types.ts` from backend OpenAPI |
 | `make migrate`               | `alembic upgrade head`                          |
 | `make migrate-new msg="..."` | Generate a new auto-detected migration          |
 | `make test-backend`          | `pytest -v`                                     |

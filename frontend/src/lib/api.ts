@@ -1,5 +1,5 @@
 import { getCSRFToken } from "./csrf";
-import type { Item, User } from "./types";
+import type { Item, ItemCreate, ItemUpdate, LoginResponse, User } from "./types";
 
 const BASE = "";
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -29,7 +29,7 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
 
 // Auth
 export async function login(email: string, password: string) {
-  return fetchAPI<{ message: string }>("/api/auth/login", {
+  return fetchAPI<LoginResponse>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
     credentials: "include",
@@ -54,7 +54,7 @@ export async function getItems() {
   return fetchAPI<Item[]>("/api/admin/items", { credentials: "include" });
 }
 
-export async function createItem(data: { name: string; description?: string }) {
+export async function createItem(data: ItemCreate) {
   return fetchAPI<Item>("/api/admin/items", {
     method: "POST",
     body: JSON.stringify(data),
@@ -62,7 +62,7 @@ export async function createItem(data: { name: string; description?: string }) {
   });
 }
 
-export async function updateItem(id: string, data: Partial<Item>) {
+export async function updateItem(id: string, data: ItemUpdate) {
   return fetchAPI<Item>(`/api/admin/items/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
