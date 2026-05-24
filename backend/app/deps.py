@@ -20,7 +20,9 @@ async def get_current_admin(access_token: str | None = Cookie(default=None)) -> 
         exp = payload.get("exp")
         if username is None:
             raise HTTPException(status_code=401, detail="Invalid token")
-        if exp and datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(timezone.utc):
+        if exp and datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(
+            timezone.utc
+        ):
             raise HTTPException(status_code=401, detail="Token expired")
         return username
     except JWTError:

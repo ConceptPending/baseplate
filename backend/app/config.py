@@ -28,10 +28,17 @@ _INSECURE_JWT_SECRETS = {"change-me-in-production", ""}
 if not settings.debug:
     errors: list[str] = []
     if settings.jwt_secret in _INSECURE_JWT_SECRETS:
-        errors.append("JWT_SECRET is insecure (default or empty). Set a strong random value.")
+        errors.append(
+            "JWT_SECRET is insecure (default or empty). Set a strong random value."
+        )
     if not settings.admin_password_hash:
-        errors.append("ADMIN_PASSWORD_HASH is empty. Set a bcrypt hash for the admin password.")
-    if "localhost" in settings.database_url and "asyncpg://myapp:myapp@" in settings.database_url:
+        errors.append(
+            "ADMIN_PASSWORD_HASH is empty. Set a bcrypt hash for the admin password."
+        )
+    if (
+        "localhost" in settings.database_url
+        and "asyncpg://myapp:myapp@" in settings.database_url
+    ):
         errors.append("DATABASE_URL appears to use default credentials.")
     if errors:
         for err in errors:

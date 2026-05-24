@@ -20,7 +20,9 @@ async def login(body: LoginRequest, request: Request, response: Response):
     if not settings.admin_password_hash:
         raise HTTPException(status_code=500, detail="Admin password not configured")
 
-    if not _bcrypt.checkpw(body.password.encode(), settings.admin_password_hash.encode()):
+    if not _bcrypt.checkpw(
+        body.password.encode(), settings.admin_password_hash.encode()
+    ):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes)
