@@ -1,5 +1,10 @@
 # Framework
 
+[![CI](https://github.com/ConceptPending/framework/actions/workflows/ci.yml/badge.svg)](https://github.com/ConceptPending/framework/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Node 20+](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org/)
+
 A production-ready full-stack starter. Clone it, rename "Item" to your domain model, and start building.
 
 ## Stack
