@@ -283,6 +283,7 @@ For larger guided transformations, see [`docs/recipes/`](docs/recipes/):
 
 - **[Audit log](docs/recipes/audit-log.md)** — record who did what when. For compliance, case management, internal review queues.
 - **[Public submission + admin queue](docs/recipes/public-submission-and-admin-queue.md)** — the intake-and-review pattern: unauthenticated public form → admin review with status workflow.
+- **[SSO via OpenID Connect](docs/recipes/sso-oidc.md)** — log in via Google Workspace (canonical) or Microsoft Entra / generic OIDC. Domain-allowlisted, additive to local password auth. The first Internal Tools recipe.
 
 More recipes welcome — see [`docs/recipes/README.md`](docs/recipes/README.md) for the format and what's planned.
 
