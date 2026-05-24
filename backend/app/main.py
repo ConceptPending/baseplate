@@ -13,6 +13,7 @@ from app.api import auth, items, public
 from app.bootstrap import ensure_admin_user
 from app.config import settings
 from app.database import async_session
+from app.middleware.csrf import CSRFMiddleware
 from app.rate_limit import limiter
 from app.tasks.scheduler import start_scheduler, stop_scheduler
 
@@ -62,6 +63,7 @@ app = FastAPI(
 
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(CSRFMiddleware)
 
 
 @app.exception_handler(RateLimitExceeded)

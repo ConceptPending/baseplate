@@ -36,6 +36,7 @@ async def test_login_success(client):
     assert response.status_code == 200
     assert response.json()["message"] == "Login successful"
     assert "access_token" in response.cookies
+    assert "csrf_token" in response.cookies
 
 
 @pytest.mark.asyncio
@@ -65,7 +66,16 @@ async def test_me_returns_user(client):
 
 @pytest.mark.asyncio
 async def test_logout(client):
-    response = await client.post("/api/auth/logout")
+    """Logout is a state-changing write — it requires CSRF after login."""
+    login_resp = await client.post(
+        "/api/auth/login",
+        json={"email": TEST_ADMIN_EMAIL, "password": "testpass"},
+    )
+    csrf = login_resp.cookies["csrf_token"]
+    response = await client.post(
+        "/api/auth/logout",
+        headers={"X-CSRF-Token": csrf},
+    )
     assert response.status_code == 200
 
 
