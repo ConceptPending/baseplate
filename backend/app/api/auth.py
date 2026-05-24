@@ -6,12 +6,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from app.config import settings
 from app.deps import get_current_admin
+from app.rate_limit import limiter
 from app.schemas.auth import LoginRequest, LoginResponse
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=LoginResponse)
+@limiter.limit("5/minute")
 async def login(body: LoginRequest, request: Request, response: Response):
     if body.username != settings.admin_username:
         raise HTTPException(status_code=401, detail="Invalid credentials")
