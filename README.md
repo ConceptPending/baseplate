@@ -5,6 +5,8 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Node 20+](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org/)
 
+> **Too important for spreadsheets. Too specific for SaaS.**
+
 A small, production-shaped full-stack foundation **designed to be safely extended by AI coding agents**.
 
 Most starter templates are designed for humans to read once and forget. This one is designed to be re-read by an LLM every session. The codebase is small enough (~24 files of business logic) to fit in a coding agent's context window, with conventions, gotchas, and extension recipes documented in [CLAUDE.md](CLAUDE.md) so the next change lands correctly the first time.
@@ -19,11 +21,7 @@ The goal isn't to include every feature. It's to keep the base small enough that
 
 ## Why one-off apps matter now
 
-AI coding agents have made a category of software economically viable that wasn't before: small, specific apps that solve one workflow for one team, client, or community. Not SaaS. Not enterprise platforms. Just **situated software** — useful for a particular context, not a generic market.
-
-The phrase that captures the lane:
-
-> **Too important for spreadsheets, too specific for SaaS.**
+AI coding agents have made a category of software economically viable that wasn't before: small, specific apps that solve one workflow for one team, client, or community. Not SaaS. Not enterprise platforms. Just **situated software** — useful for a particular context, not a generic market. The line at the top of this README is the lane: things too important to leave in a spreadsheet, too specific to justify a SaaS subscription, too narrow for off-the-shelf tools.
 
 Vibe-coded apps work brilliantly until the foundation matters: when something has to handle a password, persist a session, run a scheduled job, or survive a redeploy without losing data. That's where agents typically improvise badly. Baseplate is the foundation underneath, so the agent's free-form work happens on top of safe rails instead of on a blank canvas.
 
