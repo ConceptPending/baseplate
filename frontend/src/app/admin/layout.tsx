@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logout } from "@/lib/api";
 import { useRequireAuth } from "@/lib/auth";
 
 const NAV_ITEMS = [
@@ -70,11 +71,11 @@ export default function AdminLayout({
           </Link>
           <button
             onClick={async () => {
-              await fetch("/api/auth/logout", {
-                method: "POST",
-                credentials: "include",
-              });
-              window.location.href = "/admin/login";
+              try {
+                await logout();
+              } finally {
+                window.location.href = "/admin/login";
+              }
             }}
             className="block w-full text-left px-3 py-2 rounded-lg text-sm text-muted hover:text-foreground hover:bg-surface-elevated transition-colors"
           >

@@ -20,7 +20,6 @@ This is a starter, not a finished product. Be aware of these intentional limits 
 
 - **No user-management UI yet** — the `users` table exists and supports multiple admins, but there's no admin page to create/list/delete them. The bootstrap admin is created from `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH` on first startup. Add a `/admin/users` page when you need more.
 - **No password reset / email verification** — no email infra is wired up. Passwords are managed by re-running `make hash-password` and updating the DB by hand, or via a future user-management UI.
-- **CSRF defense is `SameSite=lax` only** — adequate for most internal admin tools but not for cookie-auth with high-value writes. A double-submit token middleware is planned.
 - **No background queue** — `APScheduler` runs in-process for periodic jobs. Fine for cron-style work; not a substitute for Celery/Redis if you need durable retries or a separate worker pool.
 
 ## Quick start
@@ -141,6 +140,16 @@ The Next.js `next.config.ts` proxies all `/api/*` requests to the backend. The b
 4. `middleware.ts` on the frontend checks for the cookie and redirects to `/admin/login` if missing.
 5. `useRequireAuth()` hook validates the token server-side via `GET /api/auth/me`.
 6. Admin API routes either gate via `dependencies=[Depends(get_current_admin)]` on the router (cleanest when the route doesn't need the User) or accept `user: User = Depends(get_current_admin)` in the signature (when the route does).
+
+### CSRF protection
+
+Cookie auth with `SameSite=lax` blocks cross-origin `fetch()` calls but not top-level form-POST navigation. To close that gap, every write (POST/PUT/PATCH/DELETE) requires a CSRF token:
+
+- **Backend** (`app/middleware/csrf.py`): a global middleware checks every non-safe, non-exempt request. The `X-CSRF-Token` header must equal the `csrf_token` cookie (constant-time comparison via `secrets.compare_digest`).
+- **Token issuance**: login sets the `csrf_token` cookie alongside `access_token`. `GET /api/auth/csrf` refreshes it (sets the cookie and returns the token in the body for non-cookie consumers).
+- **Cookie attributes**: `Secure=COOKIE_SECURE`, `SameSite=lax`, `HttpOnly=false` — JS must read it.
+- **Frontend** (`lib/api.ts`): `fetchAPI` auto-attaches `X-CSRF-Token` on writes by reading the cookie via `lib/csrf.ts:getCSRFToken()`. **Don't call `fetch()` directly for writes** — you'll get 403'd.
+- **Exempt paths**: `/api/auth/login` (no prior token possible) and `/api/auth/csrf` (issues the token). Safe methods (`GET`/`HEAD`/`OPTIONS`) bypass the check entirely.
 
 ### Backend patterns
 
