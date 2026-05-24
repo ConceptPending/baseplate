@@ -11,6 +11,8 @@ dist/
 build/
 .venv/
 venv/
+.pytest_cache/
+.ruff_cache/
 
 # Node / Next.js
 node_modules/
