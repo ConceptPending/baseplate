@@ -47,7 +47,9 @@ async def db_engine():
 
 @pytest_asyncio.fixture
 async def db_session(db_engine):
-    session_factory = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+    session_factory = async_sessionmaker(
+        db_engine, class_=AsyncSession, expire_on_commit=False
+    )
     async with session_factory() as session:
         yield session
 
@@ -57,7 +59,9 @@ async def client(db_engine):
     from app.main import app
     from app.database import get_db
 
-    session_factory = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+    session_factory = async_sessionmaker(
+        db_engine, class_=AsyncSession, expire_on_commit=False
+    )
 
     async def override_get_db():
         async with session_factory() as session:
