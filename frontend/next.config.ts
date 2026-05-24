@@ -1,17 +1,11 @@
 import type { NextConfig } from "next";
 
-const API_URL = process.env.API_URL || "http://localhost:8001";
+// The /api/* proxy is implemented as a Route Handler at
+// src/app/api/[...path]/route.ts so the API_URL env var is read at runtime
+// (not baked into the build). One Docker image works across environments.
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${API_URL}/api/:path*`,
-      },
-    ];
-  },
 };
 
 export default nextConfig;

@@ -12,6 +12,14 @@ All notable changes to this project are documented here. Format based on
 
 ### Added
 - `docs/growth-paths/multi-tenant.md` — step-by-step migration guide for evolving Baseplate from single-tenant → multi-org → SaaS. Names the architectural seams already in place (service layer, centralised auth context, alembic migrations), what to add at each stage, what to test for tenant isolation, and which migration anti-patterns to avoid.
+- `frontend/src/app/api/[...path]/route.ts` — runtime proxy for `/api/*` to the backend. Reads `process.env.API_URL` per request rather than at build time.
+
+### Fixed
+- **Frontend `API_URL` is now read at runtime.** Previously the `next.config.ts` rewrite baked the destination URL into `server.js` at `next build` time, which meant each environment required its own Docker image (Railway worked only because it auto-passes env vars as `--build-arg` during the Dockerfile build). Replacing the rewrite with a Route Handler at `app/api/[...path]/route.ts` means one image runs unchanged across dev/staging/prod with only the `API_URL` env var differing.
+
+### Removed
+- `next.config.ts` rewrites — superseded by the route handler.
+- `ARG API_URL` / `ENV API_URL=$API_URL` in `frontend/Dockerfile` — no longer needed at build time.
 
 ### Added
 - Live demo deployment on Railway (frontend, backend, Postgres). README links to the public URL.
