@@ -40,6 +40,10 @@ All notable changes to this project are documented here. Format based on
 - **[`admin-users.md`](docs/recipes/admin-users.md)** — admin UI for inviting + deactivating other admins. Adds `is_active` to `User`; service-layer safety constraints (cannot self-deactivate; refuses to demote/deactivate the last active admin) are deliberate redundancy with the UI. No deletion (preserves audit trail). Pairs with the SSO recipe and audit-log recipe.
 - **[`email-intake.md`](docs/recipes/email-intake.md)** — scheduled IMAP poll turns an inbox into an admin review queue. Composes with the public-submission recipe (same queue UI + status workflow; intake mechanism changes). Idempotent via `Message-ID` + DB unique constraint + `\Seen` flag set after commit so crash-mid-loop recovers cleanly. Deferred: inbound SMTP, webhook-based intake, attachments, HTML parsing, threading, auto-acknowledge replies, multiple inboxes, OAuth-IMAP.
 
+### Changed (README headline)
+- Hoisted **"Too important for spreadsheets. Too specific for SaaS."** to a blockquote immediately under the badges, before the tagline. The phrase now leads the README rather than living buried in "Why one-off apps matter now." Section 2 rewritten to reference the line inline instead of repeating it as a callout.
+- GitHub repo description updated to lead with the same line.
+
 ### Changed (Internal Tools surface)
 - README's "What you can build with this" list adds **"Internal tool with company data"** as a sixth shape, naming the SSO + user-management + email-intake recipes as the optional layer between the small default app and full company-data integration.
 - `docs/recipes/README.md` "Suggested future recipes" reorganised into **General patterns**, **Internal Tools track**, and **Growth-path recipes** with the candidates from the strategic feedback (Google Workspace / Microsoft Graph connectors, read-only DB sync, outbound email, AI extraction + HITL, webhook email intake, Celery/Redis, Stripe, SAML, RBAC, soft delete, status workflow, document upload, scheduled importer).
