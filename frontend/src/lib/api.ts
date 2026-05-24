@@ -1,15 +1,22 @@
+import { getCSRFToken } from "./csrf";
 import type { Item, User } from "./types";
 
 const BASE = "";
+const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
-  });
+  const method = (options?.method ?? "GET").toUpperCase();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((options?.headers ?? {}) as Record<string, string>),
+  };
+
+  if (WRITE_METHODS.has(method)) {
+    const token = getCSRFToken();
+    if (token) headers["X-CSRF-Token"] = token;
+  }
+
+  const res = await fetch(`${BASE}${path}`, { ...options, headers });
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: res.statusText }));

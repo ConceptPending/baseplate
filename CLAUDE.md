@@ -68,8 +68,10 @@ When you see these in the codebase, fix them rather than copy:
 - JWT cookie carries `sub = str(user.id)` (UUID), not the email. Renaming a user doesn't invalidate sessions.
 - `deps.get_current_admin` returns a `User` model. Routes that only need the gate use `dependencies=[Depends(get_current_admin)]` on the router; routes that need the User object accept it as a parameter (see `auth.me`).
 
-## Planned changes (don't design around current state)
+## CSRF protection
 
-These are scheduled. When scoping new work, prefer designs that survive the migration:
-
-- **CSRF protection (double-submit token)** — today cookie auth relies on `SameSite=lax`. A token-based CSRF defense is planned. New write endpoints should land normally; the middleware will layer on top.
+- `CSRFMiddleware` (`app/middleware/csrf.py`) enforces a double-submit token on every write (POST/PUT/PATCH/DELETE) that isn't on an exempt path. Login and `GET /api/auth/csrf` are the only exemptions.
+- The backend issues a `csrf_token` cookie (non-HttpOnly, JS-readable) on login and via `GET /api/auth/csrf`.
+- The frontend's `fetchAPI` wrapper (`lib/api.ts`) reads the cookie via `lib/csrf.ts:getCSRFToken()` and auto-attaches `X-CSRF-Token` on writes. Don't bypass `fetchAPI` for writes — calling `fetch()` directly will get 403'd.
+- Token check uses `secrets.compare_digest` (constant-time).
+- When testing writes, log in first and pass the returned csrf token in the header (`tests/test_items.py:_login` is the canonical pattern).

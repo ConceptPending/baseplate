@@ -44,8 +44,6 @@ See the 10-step recipe in `README.md` under "Adding a new domain model". The exi
 3. Touched a model? Generate the migration with `make migrate-new` and read it.
 4. Touched UI? Run `make dev` and verify in the browser.
 
-## Planned changes
+## CSRF protection
 
-Don't design around the current state of these — they're scheduled to change:
-
-- CSRF protection (double-submit token).
+Writes (POST/PUT/PATCH/DELETE) require an `X-CSRF-Token` header matching the `csrf_token` cookie. Login + `GET /api/auth/csrf` are exempt. The frontend's `fetchAPI` auto-attaches the header — don't call `fetch()` directly for writes. In tests, `_login()` returns the token; pass it as `headers={"X-CSRF-Token": csrf}`.
