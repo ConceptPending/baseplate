@@ -21,6 +21,12 @@ All notable changes to this project are documented here. Format based on
 - `next.config.ts` rewrites — superseded by the route handler.
 - `ARG API_URL` / `ENV API_URL=$API_URL` in `frontend/Dockerfile` — no longer needed at build time.
 
+### Added (OpenAPI typed client)
+- **`make generate-client`** — regenerates `frontend/src/lib/api-types.ts` from the FastAPI OpenAPI spec via `openapi-typescript`. No backend server needed; the new `backend/scripts/dump_openapi.py` imports `app.main` directly and prints the schema to stdout.
+- **`frontend/src/lib/api-types.ts`** — generated TypeScript types for every Pydantic schema. Committed so LLMs and `tsc` can rely on it without running the generator.
+- **`frontend/src/lib/types.ts`** rewritten as a tiny adapter that re-exports clean names (`Item`, `User`, `ItemCreate`, `ItemUpdate`, etc.) from the generated types. Existing imports keep working; the source of truth shifts to the backend Pydantic models.
+- `lib/api.ts` updated: `createItem(data: ItemCreate)`, `updateItem(id, data: ItemUpdate)`, `login(...)` returns `LoginResponse`. Request/response shapes are now derived from the backend instead of duplicated.
+
 ### Added
 - Live demo deployment on Railway (frontend, backend, Postgres). README links to the public URL.
 - `DEPLOYMENT.md` with end-to-end CLI deploy steps, GitHub Actions wiring instructions, and a "Issues hit" section documenting the three real footguns (`$PORT` injection, missing `--environment` in CI, `railway up` cwd dependency).

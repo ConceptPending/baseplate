@@ -13,6 +13,7 @@ make migrate                      # alembic upgrade head
 make migrate-new msg="add foo"    # autogenerate a new migration
 make hash-password                # bcrypt hash for ADMIN_PASSWORD_HASH
 make install-hooks                # one-time: register pre-commit hooks
+make generate-client              # regenerate frontend types from backend OpenAPI
 make stop                         # kill dev servers + Docker
 ```
 
@@ -25,11 +26,13 @@ make stop                         # kill dev servers + Docker
 - All models inherit `Base, TimestampMixin` and use `uuid_pk()` for primary keys.
 - Response schemas use `model_config = {"from_attributes": True}` so SQLAlchemy models serialize directly.
 - Register each new model in `app/models/__init__.py` — Alembic autogenerate reads `Base.metadata` from there.
+- After adding or changing any Pydantic schema, run `make generate-client` so the frontend's `lib/api-types.ts` stays in sync. Drift is detectable by `tsc` failures later, but regen-on-change keeps the commit clean.
 
 **Frontend**
 
 - Route groups: `(public)/` gets header + footer (`app/(public)/layout.tsx`); `admin/` gets sidebar + auth (`app/admin/layout.tsx`).
 - All API calls go through `lib/api.ts` (`fetchAPI<T>()` wrapper). Always pass `credentials: "include"` for authed endpoints.
+- Request and response types come from `lib/api-types.ts` (auto-generated from the backend OpenAPI spec — don't edit by hand). `lib/types.ts` re-exports them with friendly names; add a new line there when you need to reference a backend schema from frontend code.
 - Server components fetch via `API_BASE` from `lib/server-config.ts`. Client components use `lib/api.ts`.
 - Browser never hits the backend directly — Next.js rewrites `/api/*` in `next.config.ts`.
 
