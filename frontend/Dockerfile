@@ -7,9 +7,8 @@ RUN npm ci
 
 COPY . .
 
-ARG API_URL
-ENV API_URL=$API_URL
-
+# No build-time API_URL needed — the /api/* proxy is a Route Handler that
+# reads process.env.API_URL at request time. One image, configurable per env.
 RUN npm run build
 
 
