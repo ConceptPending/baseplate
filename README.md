@@ -285,6 +285,7 @@ For larger guided transformations, see [`docs/recipes/`](docs/recipes/):
 - **[Public submission + admin queue](docs/recipes/public-submission-and-admin-queue.md)** — the intake-and-review pattern: unauthenticated public form → admin review with status workflow.
 - **[SSO via OpenID Connect](docs/recipes/sso-oidc.md)** — log in via Google Workspace (canonical) or Microsoft Entra / generic OIDC. Domain-allowlisted, additive to local password auth. The first Internal Tools recipe.
 - **[User-management admin page](docs/recipes/admin-users.md)** — admin UI for inviting + deactivating other admins. Refuses to demote or deactivate the last active admin. Pairs with the SSO recipe.
+- **[Email intake → admin review queue](docs/recipes/email-intake.md)** — scheduled IMAP poll turns an inbox into a submission queue. Composes with the public-submission recipe.
 
 More recipes welcome — see [`docs/recipes/README.md`](docs/recipes/README.md) for the format and what's planned.
 
