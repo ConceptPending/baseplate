@@ -101,7 +101,23 @@ declared port (`8001`) consistent across local dev, Docker, and Railway.
 isn't exposed as a user-visible variable, so the reference resolves to an
 empty string. Document so the next person doesn't try it.
 
-### 2. `railway up` picks the wrong Dockerfile if you're in the wrong directory
+### 2. `railway up` in CI needs `--environment` explicitly
+
+**Symptom**: The first auto-deploy from GitHub Actions failed instantly with
+`No environment specified. Set RAILWAY_ENVIRONMENT_ID, use --environment, or
+run 'railway environment' to link one.`
+
+**Cause**: Locally, `railway link` writes a config file in the project's
+`.railway/` directory that pins the environment. CI's ephemeral checkout has
+no such file. The `RAILWAY_API_TOKEN` + `RAILWAY_PROJECT_ID` env vars tell
+the CLI *which project*, but not *which environment* within it.
+
+**Fix**: Add `--environment production` to the `railway up` commands in
+`.github/workflows/deploy-railway.yml`. Hardcoding the name (not the UUID)
+keeps the workflow portable across forks. Locally `railway up` still
+defaults to the linked environment, so this only changes CI behavior.
+
+### 3. `railway up` picks the wrong Dockerfile if you're in the wrong directory
 
 **Symptom**: Ran `railway up --service frontend --ci` from the repo root. Got
 a successful build... of the backend image, applied to the frontend service.
