@@ -5,7 +5,20 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Node 20+](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org/)
 
-A production-ready full-stack starter. Clone it, rename "Item" to your domain model, and start building.
+A small, production-shaped full-stack foundation **designed to be safely extended by AI coding agents**.
+
+Most starter templates are designed for humans to read once and forget. This one is designed to be re-read by an LLM every session. The codebase is small enough (~24 files of business logic) to fit in a coding agent's context window, with conventions, gotchas, and extension recipes documented in [CLAUDE.md](CLAUDE.md) so the next change lands correctly the first time.
+
+**Use this if** you're a founder, small team, or solo builder using Claude Code / Cursor / Copilot to ship single-tenant, admin-driven apps: internal tools, simple CMSes, scheduled-job dashboards, public catalogues with admin CRUD.
+
+**Don't use this if** you need a SaaS boilerplate (no billing, no team management, no self-signup), a library to depend on, or a general framework with abstraction layers. This is something you clone, rename, and own.
+
+### How it works in practice
+
+1. Clone the repo. The example `Item` model is a full vertical slice (model → migration → service → routes → frontend page).
+2. Point your coding agent at [`CLAUDE.md`](CLAUDE.md). It reads conventions, dev commands, gotchas, and anti-patterns up front.
+3. Follow the [10-step recipe](#adding-a-new-domain-model) for adding your own domain models. The agent has every pattern it needs without inventing one from scratch.
+4. Tests + lint + CI catch the mistakes coding agents typically make.
 
 ## Stack
 
