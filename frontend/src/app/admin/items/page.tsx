@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { getItems, createItem, updateItem, deleteItem } from "@/lib/api";
+import { errorMessage } from "@/lib/errors";
 import type { Item } from "@/lib/types";
 
 export default function AdminItemsPage() {
@@ -15,8 +17,12 @@ export default function AdminItemsPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const load = () => getItems().then(setItems).catch(() => {});
+  const load = () =>
+    getItems()
+      .then(setItems)
+      .catch((err) => setError(errorMessage(err, "Failed to load items")));
 
   useEffect(() => {
     load();
@@ -25,28 +31,37 @@ export default function AdminItemsPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setError(null);
     try {
       await createItem({ name, description: description || undefined });
       setName("");
       setDescription("");
       setModalOpen(false);
       load();
-    } catch {
-      // handle error
+    } catch (err) {
+      setError(errorMessage(err, "Failed to create item"));
     } finally {
       setSaving(false);
     }
   }
 
   async function toggleActive(item: Item) {
-    await updateItem(item.id, { is_active: !item.is_active });
-    load();
+    try {
+      await updateItem(item.id, { is_active: !item.is_active });
+      load();
+    } catch (err) {
+      setError(errorMessage(err, "Failed to update item"));
+    }
   }
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this item?")) return;
-    await deleteItem(id);
-    load();
+    try {
+      await deleteItem(id);
+      load();
+    } catch (err) {
+      setError(errorMessage(err, "Failed to delete item"));
+    }
   }
 
   return (
@@ -55,6 +70,8 @@ export default function AdminItemsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Items</h1>
         <Button onClick={() => setModalOpen(true)}>New Item</Button>
       </div>
+
+      <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
       <Card>
         <table className="w-full text-sm">
