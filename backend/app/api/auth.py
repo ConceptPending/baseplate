@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta, timezone
 
 import bcrypt as _bcrypt
+import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
-from app.deps import get_current_admin
-from jose import jwt
-
 from app.config import settings
+from app.deps import get_current_admin
 from app.schemas.auth import LoginRequest, LoginResponse
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])

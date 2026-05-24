@@ -1,7 +1,5 @@
-from datetime import datetime, timezone
-
+import jwt
 from fastapi import Cookie, HTTPException, status
-from jose import JWTError, jwt
 
 from app.config import settings
 
@@ -14,16 +12,16 @@ async def get_current_admin(access_token: str | None = Cookie(default=None)) -> 
         )
     try:
         payload = jwt.decode(
-            access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm]
+            access_token,
+            settings.jwt_secret,
+            algorithms=[settings.jwt_algorithm],
         )
-        username: str | None = payload.get("sub")
-        exp = payload.get("exp")
-        if username is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        if exp and datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(
-            timezone.utc
-        ):
-            raise HTTPException(status_code=401, detail="Token expired")
-        return username
-    except JWTError:
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+    username: str | None = payload.get("sub")
+    if username is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return username

@@ -31,6 +31,11 @@ if not settings.debug:
         errors.append(
             "JWT_SECRET is insecure (default or empty). Set a strong random value."
         )
+    elif len(settings.jwt_secret.encode()) < 32:
+        errors.append(
+            "JWT_SECRET must be at least 32 bytes for HS256 (HMAC-SHA256). "
+            "Generate with: python -c 'import secrets; print(secrets.token_urlsafe(48))'"
+        )
     if not settings.admin_password_hash:
         errors.append(
             "ADMIN_PASSWORD_HASH is empty. Set a bcrypt hash for the admin password."

@@ -50,4 +50,3 @@ Don't design around the current state of these — they're scheduled to change:
 
 - Users table replacing single-admin auth.
 - CSRF protection (double-submit token).
-- `python-jose` → `pyjwt`.

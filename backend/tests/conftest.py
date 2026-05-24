@@ -12,7 +12,7 @@ _TEST_PASSWORD = "testpass"
 _TEST_HASH = bcrypt.hashpw(_TEST_PASSWORD.encode(), bcrypt.gensalt()).decode()
 
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
-os.environ["JWT_SECRET"] = "test-secret"
+os.environ["JWT_SECRET"] = "test-secret-not-for-production-use-only"
 os.environ["ADMIN_USERNAME"] = "admin"
 os.environ["ADMIN_PASSWORD_HASH"] = _TEST_HASH
 os.environ["COOKIE_SECURE"] = "false"
