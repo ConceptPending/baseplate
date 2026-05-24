@@ -24,9 +24,7 @@ def upgrade() -> None:
         sa.Column("id", UUID(as_uuid=True), primary_key=True),
         sa.Column("email", sa.String(255), nullable=False),
         sa.Column("password_hash", sa.String(255), nullable=False),
-        sa.Column(
-            "is_admin", sa.Boolean, nullable=False, server_default="false"
-        ),
+        sa.Column("is_admin", sa.Boolean, nullable=False, server_default="false"),
         sa.Column(
             "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
         ),
