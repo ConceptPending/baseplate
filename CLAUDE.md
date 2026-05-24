@@ -61,9 +61,15 @@ When you see these in the codebase, fix them rather than copy:
 3. Touched a model? Run `make migrate-new msg="..."` and read the generated migration before accepting it. Autogenerate is a starting point, not a verdict.
 4. Touched a UI route? Start `make dev` and visit it. Type-checks aren't enough — verify the page renders and the API call succeeds.
 
+## Auth model
+
+- Users live in the `users` table (`app/models/user.py`). Login is by email + password (bcrypt).
+- `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH` env vars seed the **first** admin user on startup via `app/bootstrap.py:ensure_admin_user` (idempotent; only runs when no admin exists in the DB). After that, env vars are unused — manage users via the database.
+- JWT cookie carries `sub = str(user.id)` (UUID), not the email. Renaming a user doesn't invalidate sessions.
+- `deps.get_current_admin` returns a `User` model. Routes that only need the gate use `dependencies=[Depends(get_current_admin)]` on the router; routes that need the User object accept it as a parameter (see `auth.me`).
+
 ## Planned changes (don't design around current state)
 
 These are scheduled. When scoping new work, prefer designs that survive the migration:
 
-- **Users table replacing single-admin auth** — today auth uses one `ADMIN_USERNAME` + `ADMIN_PASSWORD_HASH` env pair. A `users` table is planned; `deps.get_current_admin` will return a `User` model instead of a string. Don't build features that assume only one admin exists.
 - **CSRF protection (double-submit token)** — today cookie auth relies on `SameSite=lax`. A token-based CSRF defense is planned. New write endpoints should land normally; the middleware will layer on top.

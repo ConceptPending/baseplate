@@ -1,4 +1,4 @@
-import type { Item } from "./types";
+import type { Item, User } from "./types";
 
 const BASE = "";
 
@@ -21,10 +21,10 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 // Auth
-export async function login(username: string, password: string) {
+export async function login(email: string, password: string) {
   return fetchAPI<{ message: string }>("/api/auth/login", {
     method: "POST",
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ email, password }),
     credentials: "include",
   });
 }
@@ -37,7 +37,7 @@ export async function logout() {
 }
 
 export async function checkAuth() {
-  return fetchAPI<{ username: string }>("/api/auth/me", {
+  return fetchAPI<User>("/api/auth/me", {
     credentials: "include",
   });
 }

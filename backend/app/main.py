@@ -10,7 +10,9 @@ from slowapi.middleware import SlowAPIMiddleware
 from starlette.responses import JSONResponse
 
 from app.api import auth, items, public
+from app.bootstrap import ensure_admin_user
 from app.config import settings
+from app.database import async_session
 from app.rate_limit import limiter
 from app.tasks.scheduler import start_scheduler, stop_scheduler
 
@@ -31,6 +33,18 @@ logger = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Bootstrap admin user if none exists. Wrapped because the users table
+    # may not exist yet on first run before migrations — log + continue.
+    try:
+        async with async_session() as db:
+            await ensure_admin_user(db)
+    except Exception as exc:
+        logger.warning(
+            "admin_bootstrap_failed",
+            error=str(exc),
+            hint="Run `make migrate` if the users table doesn't exist yet.",
+        )
+
     logger.info("starting_scheduler")
     start_scheduler()
     yield

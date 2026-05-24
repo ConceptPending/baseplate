@@ -48,5 +48,4 @@ See the 10-step recipe in `README.md` under "Adding a new domain model". The exi
 
 Don't design around the current state of these — they're scheduled to change:
 
-- Users table replacing single-admin auth.
 - CSRF protection (double-submit token).

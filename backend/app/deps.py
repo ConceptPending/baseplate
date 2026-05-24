@@ -1,10 +1,19 @@
+import uuid
+
 import jwt
-from fastapi import Cookie, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.database import get_db
+from app.models.user import User
 
 
-async def get_current_admin(access_token: str | None = Cookie(default=None)) -> str:
+async def get_current_admin(
+    access_token: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+) -> User:
     if not access_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -21,7 +30,17 @@ async def get_current_admin(access_token: str | None = Cookie(default=None)) -> 
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    username: str | None = payload.get("sub")
-    if username is None:
+    sub: str | None = payload.get("sub")
+    if not sub:
         raise HTTPException(status_code=401, detail="Invalid token")
-    return username
+    try:
+        user_id = uuid.UUID(sub)
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user or not user.is_admin:
+        # User was deleted, demoted, or token references a non-existent id.
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return user

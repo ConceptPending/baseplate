@@ -9,7 +9,7 @@ import { errorMessage } from "@/lib/errors";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,7 +20,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(username, password);
+      await login(email, password);
       router.push("/admin");
     } catch (err) {
       setError(errorMessage(err, "Login failed"));
@@ -39,11 +39,12 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            id="username"
-            label="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="username"
+            id="email"
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
             required
           />
           <Input

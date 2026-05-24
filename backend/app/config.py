@@ -8,7 +8,10 @@ logger = structlog.get_logger()
 
 class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://myapp:myapp@localhost:5433/myapp"
-    admin_username: str = "admin"
+    # Bootstrap admin credentials. Used only when no admin user exists in the
+    # DB on startup — see app/bootstrap.py. After bootstrap, manage users via
+    # the database.
+    admin_email: str = ""
     admin_password_hash: str = ""
     jwt_secret: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"
@@ -36,6 +39,8 @@ if not settings.debug:
             "JWT_SECRET must be at least 32 bytes for HS256 (HMAC-SHA256). "
             "Generate with: python -c 'import secrets; print(secrets.token_urlsafe(48))'"
         )
+    if not settings.admin_email:
+        errors.append("ADMIN_EMAIL is empty. Set the bootstrap admin's email address.")
     if not settings.admin_password_hash:
         errors.append(
             "ADMIN_PASSWORD_HASH is empty. Set a bcrypt hash for the admin password."
