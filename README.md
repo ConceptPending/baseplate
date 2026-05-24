@@ -9,13 +9,38 @@ A small, production-shaped full-stack foundation **designed to be safely extende
 
 Most starter templates are designed for humans to read once and forget. This one is designed to be re-read by an LLM every session. The codebase is small enough (~24 files of business logic) to fit in a coding agent's context window, with conventions, gotchas, and extension recipes documented in [CLAUDE.md](CLAUDE.md) so the next change lands correctly the first time.
 
-**Use this if** you're a founder, small team, or solo builder using Claude Code / Cursor / Copilot to ship single-tenant, admin-driven apps: internal tools, simple CMSes, scheduled-job dashboards, public catalogues with admin CRUD.
-
-**Don't use this if** you need a SaaS boilerplate (no billing, no team management, no self-signup), a library to depend on, or a general framework with abstraction layers. This is something you clone, rename, and own.
-
 **Live demo**: https://frontend-production-7642.up.railway.app — public homepage + items list. Admin login behind a credential gate. See [DEPLOYMENT.md](DEPLOYMENT.md) for what it took to deploy it.
 
-### How it works in practice
+## What you can build with this
+
+Baseplate is shaped for **single-tenant, admin-driven apps**: a logged-in admin manages data; the public reads pages backed by that data; scheduled jobs do work in the background. Concrete app shapes that map cleanly onto what Baseplate ships:
+
+- **Directory or data product** — public listings (venues, grants, tools, companies, charities, datasets), admin CRUD, scheduled freshness checks. The canonical use case.
+- **Internal operations dashboard** — lightweight CRM, supplier tracker, lead review board, compliance task tracker, contractor pipeline. Single organisation, several internal users.
+- **Intake + review queue** — public submits a form (case, application, complaint, candidate), admin reviews internally, status changes through a workflow.
+- **AI workflow with human-in-the-loop** — upload documents, LLM extracts/summarises, admin reviews and approves. Scheduler triggers extraction batches; the review queue is the admin-side product.
+- **Niche structured CMS** — content database with admin screens and a custom public frontend. Use when WordPress or Sanity is too generic and you want code ownership.
+- **Scheduled monitor** — scrape sources daily, store results, surface a digest for admin review. APScheduler handles the cron side; the admin UI is the review layer.
+
+If your app looks like one of these shapes, Baseplate gets you to "production-shaped foundation" in under an hour.
+
+## Who this is for
+
+- **Solo founders** prototyping a real product with LLM assistance — who don't want to trust the agent to invent auth, CSRF, and deployment from scratch.
+- **Consultants building bespoke internal tools** — same foundation every client project, faster delivery, fewer auth/deploy mistakes.
+- **Domain experts with technical help** — a lawyer, researcher, or operator working with a technical collaborator (human or LLM) on a custom workflow tool.
+- **Internal tools engineers at small companies** — enough structure to be maintainable without becoming enterprise architecture.
+- **Founders validating non-SaaS products** — data products, directories, review workflows, AI-assisted services that aren't billable SaaS yet.
+
+## Who this is *not* for
+
+- People building **consumer social apps** or anything needing public user accounts on day one.
+- **Multi-tenant B2B SaaS** with organisations, billing, plan limits, invitations (see [What if my app grows into a SaaS?](#what-if-my-app-grows-into-a-saas) below — it's possible, just not the default).
+- People who want **Stripe + RBAC + team onboarding on day one** — that's a SaaS boilerplate, this is its smaller cousin.
+- **Enterprise teams** needing Terraform, IAM, K8S manifests, observability stacks, policy-as-code.
+- **Beginners** who don't know what an HTTP cookie is — Baseplate assumes some web-app fluency.
+
+## How it works in practice
 
 1. Clone the repo. The example `Item` model is a full vertical slice (model → migration → service → routes → frontend page).
 2. Point your coding agent at [`CLAUDE.md`](CLAUDE.md). It reads conventions, dev commands, gotchas, and anti-patterns up front.
@@ -41,6 +66,19 @@ This is a starter, not a finished product. Be aware of these intentional limits 
 - **No user-management UI yet** — the `users` table exists and supports multiple admins, but there's no admin page to create/list/delete them. The bootstrap admin is created from `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH` on first startup. Add a `/admin/users` page when you need more.
 - **No password reset / email verification** — no email infra is wired up. Passwords are managed by re-running `make hash-password` and updating the DB by hand, or via a future user-management UI.
 - **No background queue** — `APScheduler` runs in-process for periodic jobs. Fine for cron-style work; not a substitute for Celery/Redis if you need durable retries or a separate worker pool.
+
+## What if my app grows into a SaaS?
+
+Baseplate starts single-tenant on purpose. Most small apps don't need organisations, billing, invitations, or tenant-scoped roles on day one — and adding those abstractions too early makes the code harder for humans and coding agents to understand.
+
+But Baseplate isn't a dead end. The architectural seams that make multi-tenancy feasible later are already in place:
+
+- **All data access goes through a service layer** — adding `organization_id` later means changing service method signatures, not spraying queries across routes.
+- **Auth context is centralised** — `deps.get_current_admin` returns a `User`; threading `current_org` through it is mechanical.
+- **The users table already supports multiple admins** — adding a `/admin/users` page is the next obvious step *before* introducing tenancy at all.
+- **Alembic-managed migrations** — adding tenancy columns and backfilling existing rows is a normal alembic flow.
+
+When (if) you need it, see [docs/growth-paths/multi-tenant.md](docs/growth-paths/multi-tenant.md) for the step-by-step migration guide. Baseplate deliberately does *not* ship unused `organization_id` columns or tenancy machinery you're not using yet — **unsafe or unused multi-tenancy is worse than no multi-tenancy**.
 
 ## Quick start
 
@@ -345,10 +383,36 @@ CI (`.github/workflows/ci.yml`) runs tests + lint on every push and PR — no
 platform secrets required. Deploy is a separate, opt-in workflow.
 
 > **See [DEPLOYMENT.md](DEPLOYMENT.md)** for end-to-end notes from the actual
-> first deployment, including the two non-obvious issues that came up
-> (Railway's `$PORT` injection vs Dockerfile defaults, `railway up` picking
-> the wrong Dockerfile when run from the wrong directory). The quick path
-> below assumes you've read those caveats.
+> first deployment, including the three non-obvious issues that came up
+> (Railway's `$PORT` injection, missing `--environment` in CI, `railway up`
+> picking the wrong Dockerfile when run from the wrong directory). The
+> quick path below assumes you've read those caveats.
+
+### Portability contract
+
+Baseplate ships with Railway as the default deployment path because it's the
+fastest way to get a small full-stack app online. **It is not Railway-coupled.**
+The portability contract — what every supported platform must provide — is:
+
+| Requirement | How Baseplate uses it |
+|---|---|
+| Standard Docker containers | Both services build as multi-stage images |
+| `$PORT` env var at runtime | Both services bind to `$PORT` (or their dev default) |
+| Non-root container runtime | Both run as uid 1000 by default |
+| HTTP healthchecks | `/api/health` (backend), `/healthz` (frontend) |
+| Environment-variable config | All secrets and tunables are env-driven |
+| Managed Postgres | The only required external service |
+| One-off command on deploy | Backend's CMD runs `alembic upgrade head` before `uvicorn` |
+
+That means Baseplate runs unchanged on Render, Fly.io, Google Cloud Run, AWS
+App Runner / ECS Fargate, and Kubernetes — though only **Railway is
+first-class-verified today**. Treat other platforms as reachable but
+unverified until smoke-tested examples land.
+
+**To swap platforms**: delete `.github/workflows/deploy-railway.yml`, add a
+`deploy-<platform>.yml` alongside it using the same `workflow_run` trigger
+pattern. Both Dockerfiles are already platform-agnostic; no app-layer change
+needed.
 
 ### Default: Railway
 
