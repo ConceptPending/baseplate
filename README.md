@@ -11,6 +11,24 @@ Most starter templates are designed for humans to read once and forget. This one
 
 **Live demo**: https://frontend-production-7642.up.railway.app — public homepage + items list. Admin login behind a credential gate. See [DEPLOYMENT.md](DEPLOYMENT.md) for what it took to deploy it.
 
+## The core idea
+
+Coding agents are very good at extending clear patterns and very bad at inventing safe foundations. Baseplate gives the agent the boring decisions already made — cookie auth + CSRF, service-layer data access, migrations, typed API boundaries, tests, Docker, documented extension recipes — so the next change is "extend this," not "invent this."
+
+The goal isn't to include every feature. It's to keep the base small enough that both humans and agents can hold it in their heads.
+
+## Why one-off apps matter now
+
+AI coding agents have made a category of software economically viable that wasn't before: small, specific apps that solve one workflow for one team, client, or community. Not SaaS. Not enterprise platforms. Just **situated software** — useful for a particular context, not a generic market.
+
+The phrase that captures the lane:
+
+> **Too important for spreadsheets, too specific for SaaS.**
+
+Vibe-coded apps work brilliantly until the foundation matters: when something has to handle a password, persist a session, run a scheduled job, or survive a redeploy without losing data. That's where agents typically improvise badly. Baseplate is the foundation underneath, so the agent's free-form work happens on top of safe rails instead of on a blank canvas.
+
+The [recipes](docs/recipes/) are where the growth happens — each one a documented transformation an agent can apply cleanly to extend the base for a specific use case.
+
 ## What you can build with this
 
 Baseplate is shaped for **single-tenant, admin-driven apps**: a logged-in admin manages data; the public reads pages backed by that data; scheduled jobs do work in the background. Concrete app shapes that map cleanly onto what Baseplate ships:
@@ -27,7 +45,7 @@ If your app looks like one of these shapes, Baseplate gets you to "production-sh
 ## Who this is for
 
 - **Solo founders** prototyping a real product with LLM assistance — who don't want to trust the agent to invent auth, CSRF, and deployment from scratch.
-- **Consultants building bespoke internal tools** — same foundation every client project, faster delivery, fewer auth/deploy mistakes.
+- **Consultants building bespoke internal tools** — start every client engagement from the same production-shaped foundation. Faster delivery, fewer auth/deploy mistakes, easier handover, and the client owns the code outright.
 - **Domain experts with technical help** — a lawyer, researcher, or operator working with a technical collaborator (human or LLM) on a custom workflow tool.
 - **Internal tools engineers at small companies** — enough structure to be maintainable without becoming enterprise architecture.
 - **Founders validating non-SaaS products** — data products, directories, review workflows, AI-assisted services that aren't billable SaaS yet.

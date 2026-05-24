@@ -31,6 +31,10 @@ All notable changes to this project are documented here. Format based on
 ### Added (example app)
 - **`ConceptPending/baseplate-example-feedback`** — a working application built by taking Baseplate v0.1.0, removing the `Item` example, and applying the public-submission-and-admin-queue recipe. ~12 file changes total, the same kind of work an LLM following the recipe would produce. README now links to it under "Extending Baseplate" so readers can see what a recipe produces.
 
+### Changed (positioning)
+- README adds two new sections — **"The core idea"** and **"Why one-off apps matter now"** — between the live-demo callout and "What you can build." Makes the agent-first thesis explicit ("agents are good at extending patterns, bad at inventing foundations") and names the cultural wave ("too important for spreadsheets, too specific for SaaS").
+- Sharpened the consultant line in "Who this is for" to call out the consultant use case more concretely: same foundation per engagement, client owns the code, easier handover.
+
 ### Added (OpenAPI typed client)
 - **`make generate-client`** — regenerates `frontend/src/lib/api-types.ts` from the FastAPI OpenAPI spec via `openapi-typescript`. No backend server needed; the new `backend/scripts/dump_openapi.py` imports `app.main` directly and prints the schema to stdout.
 - **`frontend/src/lib/api-types.ts`** — generated TypeScript types for every Pydantic schema. Committed so LLMs and `tsc` can rely on it without running the generator.
