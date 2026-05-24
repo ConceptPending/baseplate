@@ -268,6 +268,8 @@ For larger guided transformations, see [`docs/recipes/`](docs/recipes/):
 
 More recipes welcome — see [`docs/recipes/README.md`](docs/recipes/README.md) for the format and what's planned.
 
+**See a recipe applied**: [`baseplate-example-feedback`](https://github.com/ConceptPending/baseplate-example-feedback) is a working app — public feedback form + admin review queue — built by taking Baseplate v0.1.0, removing the `Item` example, and applying the public-submission recipe. Roughly 12 file changes, the same kind of work an LLM following the recipe would produce.
+
 ### Adding a new domain model
 
 This is the most common operation. Replace "Item" or add alongside it.
