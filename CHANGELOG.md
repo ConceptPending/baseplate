@@ -6,6 +6,10 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Added
+- Live demo deployment on Railway (frontend, backend, Postgres). README links to the public URL.
+- `DEPLOYMENT.md` with end-to-end CLI deploy steps, GitHub Actions wiring instructions, and a "Issues hit" section documenting the two real footguns (`$PORT` injection, `railway up` cwd dependency).
+
 ## [0.1.0] — 2026-05-24
 
 Initial public release.

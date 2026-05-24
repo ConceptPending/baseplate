@@ -13,6 +13,8 @@ Most starter templates are designed for humans to read once and forget. This one
 
 **Don't use this if** you need a SaaS boilerplate (no billing, no team management, no self-signup), a library to depend on, or a general framework with abstraction layers. This is something you clone, rename, and own.
 
+**Live demo**: https://frontend-production-7642.up.railway.app — public homepage + items list. Admin login behind a credential gate. See [DEPLOYMENT.md](DEPLOYMENT.md) for what it took to deploy it.
+
 ### How it works in practice
 
 1. Clone the repo. The example `Item` model is a full vertical slice (model → migration → service → routes → frontend page).
@@ -341,6 +343,12 @@ Dark mode is available by adding the `dark` class to `<html>`. The CSS variables
 
 CI (`.github/workflows/ci.yml`) runs tests + lint on every push and PR — no
 platform secrets required. Deploy is a separate, opt-in workflow.
+
+> **See [DEPLOYMENT.md](DEPLOYMENT.md)** for end-to-end notes from the actual
+> first deployment, including the two non-obvious issues that came up
+> (Railway's `$PORT` injection vs Dockerfile defaults, `railway up` picking
+> the wrong Dockerfile when run from the wrong directory). The quick path
+> below assumes you've read those caveats.
 
 ### Default: Railway
 
