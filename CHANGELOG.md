@@ -28,6 +28,9 @@ All notable changes to this project are documented here. Format based on
 - `docs/recipes/README.md` — index + recipe format spec ("what it is", "what you'll add", "step-by-step", "tests", "what to skip until you need it"). Naming conventions so future recipes are consistent.
 - README's "Extending Baseplate" section now points at the recipes directory.
 
+### Added (example app)
+- **`ConceptPending/baseplate-example-feedback`** — a working application built by taking Baseplate v0.1.0, removing the `Item` example, and applying the public-submission-and-admin-queue recipe. ~12 file changes total, the same kind of work an LLM following the recipe would produce. README now links to it under "Extending Baseplate" so readers can see what a recipe produces.
+
 ### Added (OpenAPI typed client)
 - **`make generate-client`** — regenerates `frontend/src/lib/api-types.ts` from the FastAPI OpenAPI spec via `openapi-typescript`. No backend server needed; the new `backend/scripts/dump_openapi.py` imports `app.main` directly and prints the schema to stdout.
 - **`frontend/src/lib/api-types.ts`** — generated TypeScript types for every Pydantic schema. Committed so LLMs and `tsc` can rely on it without running the generator.
