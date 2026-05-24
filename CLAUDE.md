@@ -67,4 +67,3 @@ These are scheduled. When scoping new work, prefer designs that survive the migr
 
 - **Users table replacing single-admin auth** — today auth uses one `ADMIN_USERNAME` + `ADMIN_PASSWORD_HASH` env pair. A `users` table is planned; `deps.get_current_admin` will return a `User` model instead of a string. Don't build features that assume only one admin exists.
 - **CSRF protection (double-submit token)** — today cookie auth relies on `SameSite=lax`. A token-based CSRF defense is planned. New write endpoints should land normally; the middleware will layer on top.
-- **`python-jose` → `pyjwt`** — jose is unmaintained. Migration is queued; if you touch `app/deps.py` or `app/api/auth.py`, keep changes minimal there.

@@ -21,7 +21,6 @@ This is a starter, not a finished product. Be aware of these intentional limits 
 - **Single admin user** — auth uses one `ADMIN_USERNAME` + `ADMIN_PASSWORD_HASH` env pair, not a users table. A multi-user table is a planned next step (see `CLAUDE.md`). Don't design features that assume per-user data until that lands.
 - **CSRF defense is `SameSite=lax` only** — adequate for most internal admin tools but not for cookie-auth with high-value writes. A double-submit token middleware is planned.
 - **No background queue** — `APScheduler` runs in-process for periodic jobs. Fine for cron-style work; not a substitute for Celery/Redis if you need durable retries or a separate worker pool.
-- **`python-jose` (JWT lib) is unmaintained** — migration to `pyjwt` is planned.
 
 ## Quick start
 
