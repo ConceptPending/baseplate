@@ -8,6 +8,10 @@ All notable changes to this project are documented here. Format based on
 
 ### Changed
 - **Renamed project from Framework to Baseplate.** The repo is now `ConceptPending/baseplate` (old URLs redirect). Doc references updated throughout. Python `app/` package and example "MyApp" placeholders unchanged — those represent the user's app, not Baseplate itself.
+- **README rewritten** to lead with concrete use cases ("Directory or data product", "Internal operations dashboard", "Intake + review queue", "AI workflow with human-in-the-loop", "Niche structured CMS", "Scheduled monitor") and named personas (solo founders, consultants, domain experts with technical help, internal tools engineers, founders validating non-SaaS products). Adds explicit "Who this is *not* for" qualifiers. New "What if my app grows into a SaaS?" section pointing at the growth-path doc. New "Portability contract" table documenting the Docker contract.
+
+### Added
+- `docs/growth-paths/multi-tenant.md` — step-by-step migration guide for evolving Baseplate from single-tenant → multi-org → SaaS. Names the architectural seams already in place (service layer, centralised auth context, alembic migrations), what to add at each stage, what to test for tenant isolation, and which migration anti-patterns to avoid.
 
 ### Added
 - Live demo deployment on Railway (frontend, backend, Postgres). README links to the public URL.
