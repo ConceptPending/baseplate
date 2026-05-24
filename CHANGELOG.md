@@ -35,6 +35,9 @@ All notable changes to this project are documented here. Format based on
 - README adds two new sections — **"The core idea"** and **"Why one-off apps matter now"** — between the live-demo callout and "What you can build." Makes the agent-first thesis explicit ("agents are good at extending patterns, bad at inventing foundations") and names the cultural wave ("too important for spreadsheets, too specific for SaaS").
 - Sharpened the consultant line in "Who this is for" to call out the consultant use case more concretely: same foundation per engagement, client owns the code, easier handover.
 
+### Added (recipes — Internal Tools track)
+- **[`sso-oidc.md`](docs/recipes/sso-oidc.md)** — OIDC SSO recipe leading with Google Workspace. Domain-allowlisted, additive to local password auth (env-var bootstrap admin remains as emergency fallback), explicit refusal to auto-link by email collision (account-takeover defence). Variants for Microsoft Entra ID and generic OIDC. PKCE on by default; refresh tokens, group-claim mapping, and SAML deferred to growth-path recipes. Composes with the audit-log recipe.
+
 ### Added (OpenAPI typed client)
 - **`make generate-client`** — regenerates `frontend/src/lib/api-types.ts` from the FastAPI OpenAPI spec via `openapi-typescript`. No backend server needed; the new `backend/scripts/dump_openapi.py` imports `app.main` directly and prints the schema to stdout.
 - **`frontend/src/lib/api-types.ts`** — generated TypeScript types for every Pydantic schema. Committed so LLMs and `tsc` can rely on it without running the generator.

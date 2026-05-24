@@ -45,6 +45,13 @@ Unauthenticated public form → admin review queue with status workflow.
 The canonical "intake + review" pattern: applications, complaints,
 support requests, candidate submissions, content moderation.
 
+### [SSO via OpenID Connect](sso-oidc.md)
+Lets users log in via their company identity (Google Workspace as the
+canonical example; Microsoft Entra ID and generic OIDC as variants).
+Domain-allowlisted, additive to local password auth, with explicit
+refusal to auto-link by email collision. The first "Internal Tools"
+recipe.
+
 ## Suggested future recipes (not yet written)
 
 These came up in scoping but haven't landed yet. Open a PR if you
