@@ -52,6 +52,13 @@ Domain-allowlisted, additive to local password auth, with explicit
 refusal to auto-link by email collision. The first "Internal Tools"
 recipe.
 
+### [User-management admin page](admin-users.md)
+Lets admins create, list, and deactivate other admins via the UI. Adds
+`is_active` to `User`, blocks self-deactivation, refuses to demote or
+deactivate the last active admin. Pairs naturally with the SSO recipe
+once people can log in via Google Workspace and you need a place to
+see who has access.
+
 ## Suggested future recipes (not yet written)
 
 These came up in scoping but haven't landed yet. Open a PR if you
