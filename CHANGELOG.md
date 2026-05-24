@@ -8,7 +8,10 @@ All notable changes to this project are documented here. Format based on
 
 ### Added
 - Live demo deployment on Railway (frontend, backend, Postgres). README links to the public URL.
-- `DEPLOYMENT.md` with end-to-end CLI deploy steps, GitHub Actions wiring instructions, and a "Issues hit" section documenting the two real footguns (`$PORT` injection, `railway up` cwd dependency).
+- `DEPLOYMENT.md` with end-to-end CLI deploy steps, GitHub Actions wiring instructions, and a "Issues hit" section documenting the three real footguns (`$PORT` injection, missing `--environment` in CI, `railway up` cwd dependency).
+
+### Fixed
+- `deploy-railway.yml`: pass `--environment production` to `railway up`. Without it the CLI errors with "No environment specified" in CI (no `.railway/` link dir).
 
 ## [0.1.0] — 2026-05-24
 

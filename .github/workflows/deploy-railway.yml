@@ -41,7 +41,9 @@ jobs:
         working-directory: .
         run: npm install -g @railway/cli
       - name: Deploy backend
-        run: railway up --service backend --ci
+        # --environment is required because CI has no `.railway/` link dir;
+        # railway up otherwise errors with "No environment specified".
+        run: railway up --service backend --ci --environment production
 
   deploy-frontend:
     name: Deploy frontend
@@ -63,4 +65,4 @@ jobs:
         working-directory: .
         run: npm install -g @railway/cli
       - name: Deploy frontend
-        run: railway up --service frontend --ci
+        run: railway up --service frontend --ci --environment production
