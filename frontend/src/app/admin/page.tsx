@@ -3,14 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { getItems } from "@/lib/api";
+import { errorMessage } from "@/lib/errors";
 import type { Item } from "@/lib/types";
 
 export default function AdminDashboard() {
   const [items, setItems] = useState<Item[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getItems().then(setItems).catch(() => {});
+    getItems()
+      .then(setItems)
+      .catch((err) => setError(errorMessage(err, "Failed to load items")));
   }, []);
 
   const active = items.filter((i) => i.is_active).length;
@@ -21,6 +26,8 @@ export default function AdminDashboard() {
       <h1 className="text-2xl font-semibold tracking-tight mb-6">
         Dashboard
       </h1>
+
+      <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card className="p-5">
