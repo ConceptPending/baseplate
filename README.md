@@ -82,7 +82,9 @@ Open `http://localhost:3001/admin/login` and log in with the username/password y
 │   └── package.json
 ├── docker-compose.yml          # Local Postgres
 ├── Makefile                    # All dev/test/deploy commands
-└── .github/workflows/deploy.yml
+└── .github/workflows/
+    ├── ci.yml                  # Tests + lint (always runs)
+    └── deploy-railway.yml      # Railway deploy (opt-in, see Deployment)
 ```
 
 ## Environment variables
@@ -303,31 +305,38 @@ Dark mode is available by adding the `dark` class to `<html>`. The CSS variables
 2. It automatically gets the sidebar layout and is protected by `middleware.ts`
 3. Add the nav link in `frontend/src/app/admin/layout.tsx`
 
-## Deployment to Railway
+## Deployment
 
-### First-time setup
+CI (`.github/workflows/ci.yml`) runs tests + lint on every push and PR — no
+platform secrets required. Deploy is a separate, opt-in workflow.
 
-1. Create a Railway project with three services: `backend`, `frontend`, and a PostgreSQL plugin
+### Default: Railway
+
+The repo ships with `.github/workflows/deploy-railway.yml`. It's dormant until
+you flip a switch, so a freshly cloned starter doesn't fail CI before a
+project exists.
+
+**First-time setup:**
+
+1. Create a Railway project with three services: `backend`, `frontend`, and a PostgreSQL plugin.
 2. Set environment variables on each Railway service:
    - **backend**: `DATABASE_URL` (from Postgres plugin), `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `COOKIE_SECURE=true`, `CORS_ORIGINS=["https://your-frontend.up.railway.app"]`
    - **frontend**: `API_URL` (internal Railway URL of the backend, e.g. `http://backend.railway.internal:8001`)
-3. Add two secrets to your GitHub repo:
-   - **`RAILWAY_TOKEN`** — a **workspace/account token** (Railway → Account
-     Settings → Tokens). *Not* a per-project token. The workflow feeds it to the
-     CLI as `RAILWAY_API_TOKEN`; a project token in this slot fails with
-     `Invalid RAILWAY_TOKEN`. One account token covers the whole project.
+3. Add two GitHub **secrets** to your repo:
+   - **`RAILWAY_TOKEN`** — a **workspace/account token** (Railway → Account Settings → Tokens). *Not* a per-project token. The workflow feeds it to the CLI as `RAILWAY_API_TOKEN`; a project token in this slot fails with `Invalid RAILWAY_TOKEN`.
    - **`RAILWAY_PROJECT_ID`** — the project's ID (Railway project → Settings).
-4. Push to `main` — GitHub Actions runs the tests, then deploys both services.
+4. Add a GitHub **variable** (not secret): **`RAILWAY_DEPLOY_ENABLED=true`** under Settings → Secrets and variables → Actions → Variables. This is the gate that turns deploys on.
+5. Push to `main`. CI runs first; once it succeeds, the deploy workflow fires.
 
-### How the deploy works
+### How the workflows fit together
 
-The `.github/workflows/deploy.yml` workflow (`CI & Deploy`):
-- On every push **and pull request**, runs `test-backend` (ruff + pytest) and
-  `test-frontend` (typecheck, vitest, build).
-- `deploy-backend` / `deploy-frontend` `needs` both test jobs and run **only on
-  pushes to `main`** — so a red test run, or any PR, never deploys.
-- Deploy uses `railway up --service <name>`, which builds each service's
-  Dockerfile on Railway's infrastructure.
+- `ci.yml` runs on every push and PR — backend ruff + pytest, frontend typecheck + ESLint + vitest + build.
+- `deploy-railway.yml` triggers on `workflow_run: CI completed`, only when the CI run was successful, only on `main`, and only when `vars.RAILWAY_DEPLOY_ENABLED == 'true'`. Without the variable, the deploy workflow's jobs are skipped (no failure).
+- Deploy uses `railway up --service <name>`, which builds each service's Dockerfile on Railway's infrastructure.
+
+### Swapping platforms
+
+Delete `deploy-railway.yml` and add a `deploy-<platform>.yml` alongside it. Use the same `workflow_run` trigger pattern so deploys still gate on CI success. Both Dockerfiles are already platform-agnostic (read `$PORT` at runtime).
 
 ### Railway environment notes
 
