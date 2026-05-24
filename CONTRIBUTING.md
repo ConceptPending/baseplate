@@ -1,7 +1,7 @@
 # Contributing
 
-Thanks for your interest. This is a personal starter framework — happy to
-take PRs that fit the scope, but not actively recruiting maintainers.
+Thanks for your interest. Baseplate is a personal starter — happy to take
+PRs that fit the scope, but not actively recruiting maintainers.
 
 ## Setup
 

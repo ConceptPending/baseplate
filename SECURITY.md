@@ -14,7 +14,7 @@ opening a public issue.
 
 Preferred channels, in order:
 
-1. **GitHub Security Advisories** — https://github.com/ConceptPending/framework/security/advisories/new
+1. **GitHub Security Advisories** — https://github.com/ConceptPending/baseplate/security/advisories/new
 2. **Email** — nick@nickw.info
 
 What to include:
@@ -38,7 +38,7 @@ reporter unless they prefer otherwise.
 
 ## Scope
 
-**In scope** — the framework code as shipped on `main`:
+**In scope** — Baseplate's code as shipped on `main`:
 
 - Authentication and authorization logic (`backend/app/api/auth.py`, `backend/app/deps.py`)
 - CSRF middleware (`backend/app/middleware/csrf.py`)
@@ -59,7 +59,7 @@ reporter unless they prefer otherwise.
 
 ## Hardening already in place
 
-Before reporting, note that the framework already addresses the common
+Before reporting, note that Baseplate already addresses the common
 issues:
 
 - bcrypt password hashing

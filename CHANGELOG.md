@@ -6,6 +6,9 @@ All notable changes to this project are documented here. Format based on
 
 ## [Unreleased]
 
+### Changed
+- **Renamed project from Framework to Baseplate.** The repo is now `ConceptPending/baseplate` (old URLs redirect). Doc references updated throughout. Python `app/` package and example "MyApp" placeholders unchanged — those represent the user's app, not Baseplate itself.
+
 ### Added
 - Live demo deployment on Railway (frontend, backend, Postgres). README links to the public URL.
 - `DEPLOYMENT.md` with end-to-end CLI deploy steps, GitHub Actions wiring instructions, and a "Issues hit" section documenting the three real footguns (`$PORT` injection, missing `--environment` in CI, `railway up` cwd dependency).
@@ -71,5 +74,5 @@ adding new domain models, plus full architecture overview.
 **Repository hygiene** — MIT licensed, `.env.example` files tracked at three
 levels, `CONTRIBUTING.md`, `SECURITY.md`, GitHub PR template, README badges.
 
-[Unreleased]: https://github.com/ConceptPending/framework/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/ConceptPending/framework/releases/tag/v0.1.0
+[Unreleased]: https://github.com/ConceptPending/baseplate/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ConceptPending/baseplate/releases/tag/v0.1.0

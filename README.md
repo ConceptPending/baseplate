@@ -1,6 +1,6 @@
-# Framework
+# Baseplate
 
-[![CI](https://github.com/ConceptPending/framework/actions/workflows/ci.yml/badge.svg)](https://github.com/ConceptPending/framework/actions/workflows/ci.yml)
+[![CI](https://github.com/ConceptPending/baseplate/actions/workflows/ci.yml/badge.svg)](https://github.com/ConceptPending/baseplate/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Node 20+](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org/)
@@ -219,7 +219,7 @@ async def create_item(data: ItemCreate, admin=Depends(get_current_admin), db=Dep
 | `make stop`                  | Kill dev servers + stop Docker                  |
 | `make restart`               | Stop then start everything                      |
 
-## Extending the framework
+## Extending Baseplate
 
 ### Adding a new domain model
 

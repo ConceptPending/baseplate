@@ -7,7 +7,7 @@ The repo is deployed to Railway as a working demo:
 - **Health**: `/api/health` on backend, `/healthz` on frontend
 
 This document captures what it took to deploy the first time, including the
-two issues hit and how they were resolved. If you're forking the framework to
+two issues hit and how they were resolved. If you're forking Baseplate to
 your own Railway project, these notes save you from rediscovering them.
 
 ## Quick path (CLI-first)
@@ -76,7 +76,7 @@ freshly cloned starter doesn't fail CI before Railway is set up.
 
 ## Issues hit on the first real deploy
 
-These are the rough edges I ran into. They're not bugs in the framework, but
+These are the rough edges I ran into. They're not bugs in Baseplate, but
 they cost time the first time around.
 
 ### 1. Railway's `$PORT` injection vs. Dockerfile defaults
@@ -93,7 +93,7 @@ needs the right port.
 
 **Fix**: Explicitly set `PORT=8001` on the backend service to override
 Railway's auto-injection. The frontend's `API_URL=http://backend.railway.internal:8001`
-then works. Trade-off: less idiomatic for Railway but keeps the framework's
+then works. Trade-off: less idiomatic for Railway but keeps Baseplate's
 declared port (`8001`) consistent across local dev, Docker, and Railway.
 
 **Alternative that didn't work**: Using Railway variable reference
@@ -142,7 +142,7 @@ the cwd to that service.
 ## DATABASE_URL format
 
 Railway's Postgres plugin sets `DATABASE_URL=postgresql://...` (the standard
-PG URL format). The framework's SQLAlchemy config expects
+PG URL format). Baseplate's SQLAlchemy config expects
 `postgresql+asyncpg://...` (driver-prefixed for the asyncpg driver).
 
 Don't just reference `${{Postgres.DATABASE_URL}}` directly — the prefix
