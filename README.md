@@ -260,6 +260,14 @@ async def create_item(data: ItemCreate, admin=Depends(get_current_admin), db=Dep
 
 ## Extending Baseplate
 
+The basic transformation is "add a new domain model" — covered below.
+For larger guided transformations, see [`docs/recipes/`](docs/recipes/):
+
+- **[Audit log](docs/recipes/audit-log.md)** — record who did what when. For compliance, case management, internal review queues.
+- **[Public submission + admin queue](docs/recipes/public-submission-and-admin-queue.md)** — the intake-and-review pattern: unauthenticated public form → admin review with status workflow.
+
+More recipes welcome — see [`docs/recipes/README.md`](docs/recipes/README.md) for the format and what's planned.
+
 ### Adding a new domain model
 
 This is the most common operation. Replace "Item" or add alongside it.
