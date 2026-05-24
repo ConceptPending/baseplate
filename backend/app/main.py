@@ -1,28 +1,32 @@
+import time
+import uuid
 from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from slowapi.util import get_remote_address
 from starlette.responses import JSONResponse
 
 from app.api import auth, items, public
 from app.config import settings
+from app.rate_limit import limiter
 from app.tasks.scheduler import start_scheduler, stop_scheduler
 
-structlog.configure(
-    processors=[
-        structlog.stdlib.add_log_level,
-        structlog.dev.ConsoleRenderer(),
-    ],
-)
+_log_processors: list = [
+    structlog.contextvars.merge_contextvars,
+    structlog.stdlib.add_log_level,
+    structlog.processors.TimeStamper(fmt="iso"),
+]
+if settings.debug:
+    _log_processors.append(structlog.dev.ConsoleRenderer())
+else:
+    _log_processors.append(structlog.processors.JSONRenderer())
+
+structlog.configure(processors=_log_processors)
 
 logger = structlog.get_logger()
-
-limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 
 
 @asynccontextmanager
@@ -61,6 +65,38 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+
+# Outermost middleware — sees the final response (including CORS headers and
+# rate-limit 429s) and binds a request_id that downstream structlog calls
+# inherit via contextvars.
+@app.middleware("http")
+async def request_logging(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    start = time.perf_counter()
+    with structlog.contextvars.bound_contextvars(request_id=request_id):
+        try:
+            response = await call_next(request)
+        except Exception:
+            duration_ms = round((time.perf_counter() - start) * 1000, 2)
+            logger.exception(
+                "request_failed",
+                method=request.method,
+                path=request.url.path,
+                duration_ms=duration_ms,
+            )
+            raise
+        duration_ms = round((time.perf_counter() - start) * 1000, 2)
+        logger.info(
+            "request",
+            method=request.method,
+            path=request.url.path,
+            status=response.status_code,
+            duration_ms=duration_ms,
+        )
+        response.headers["X-Request-ID"] = request_id
+        return response
+
 
 # Admin routes
 app.include_router(auth.router)

@@ -58,6 +58,10 @@ async def db_session(db_engine):
 async def client(db_engine):
     from app.main import app
     from app.database import get_db
+    from app.rate_limit import limiter
+
+    # Per-IP rate-limit state would otherwise leak across tests.
+    limiter.reset()
 
     session_factory = async_sessionmaker(
         db_engine, class_=AsyncSession, expire_on_commit=False
