@@ -59,6 +59,11 @@ deactivate the last active admin. Pairs naturally with the SSO recipe
 once people can log in via Google Workspace and you need a place to
 see who has access.
 
+### [Email intake → admin review queue](email-intake.md)
+Scheduled IMAP poll turns an inbox into a submission queue. Composes
+with the public-submission recipe — same queue UI, same status workflow,
+just a different intake mechanism. Idempotent via `Message-ID`.
+
 ## Suggested future recipes (not yet written)
 
 These came up in scoping but haven't landed yet. Open a PR if you
