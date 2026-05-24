@@ -14,6 +14,17 @@ A production-ready full-stack starter. Clone it, rename "Item" to your domain mo
 | Deploy     | Docker multi-stage builds, Railway via GitHub Actions            |
 | Logging    | structlog (structured JSON in prod, colored console in dev)      |
 
+## Scope and limitations
+
+This is a starter, not a finished product. Be aware of these intentional limits before building on top:
+
+- **Single admin user** — auth uses one `ADMIN_USERNAME` + `ADMIN_PASSWORD_HASH` env pair, not a users table. A multi-user table is a planned next step (see `CLAUDE.md`). Don't design features that assume per-user data until that lands.
+- **CSRF defense is `SameSite=lax` only** — adequate for most internal admin tools but not for cookie-auth with high-value writes. A double-submit token middleware is planned.
+- **No background queue** — `APScheduler` runs in-process for periodic jobs. Fine for cron-style work; not a substitute for Celery/Redis if you need durable retries or a separate worker pool.
+- **Vitest is configured for node-env only** — component tests with React Testing Library don't work yet (the deps are installed but the config isn't wired). Stick to pure-function tests until the config is fixed.
+- **ESLint exists but isn't in CI** — run `cd frontend && npm run lint` manually until it's wired into `make lint` and the workflow.
+- **`python-jose` (JWT lib) is unmaintained** — migration to `pyjwt` is planned.
+
 ## Quick start
 
 ```bash
@@ -356,6 +367,7 @@ make test-frontend      # runs vitest run
 
 ## Gotchas and things to know
 
+- **Ports don't match between local and Docker.** Local dev uses backend `:8001` and frontend `:3001` (set in `Makefile`). The backend `Dockerfile` exposes `8000` and reads `$PORT` (Railway injects it). Don't reconcile these in only one place — both are correct for their environment.
 - **`/docs` is disabled in production.** Set `DEBUG=true` to enable the Swagger UI at `/docs` and ReDoc at `/redoc`. This is controlled in `main.py`.
 - **Rate limiting** is set to 60 requests/minute globally via SlowAPI. Adjust in `main.py`. Add per-endpoint limits with `@limiter.limit("10/minute")` on individual route handlers.
 - **The middleware.ts deprecation warning** — Next.js 16 is renaming the `middleware.ts` convention to `proxy.ts`. The current file still works but you'll see a build warning. Rename when ready.
