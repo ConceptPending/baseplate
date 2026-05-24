@@ -67,15 +67,49 @@ just a different intake mechanism. Idempotent via `Message-ID`.
 ## Suggested future recipes (not yet written)
 
 These came up in scoping but haven't landed yet. Open a PR if you
-write one:
+write one. Grouped by the audience that's most likely to want them.
 
-- **Document upload model** — file storage + metadata + admin viewer
+### General patterns
+
+- **Document upload model** — file storage + metadata + admin viewer (S3/R2-compatible)
 - **Scheduled importer** — APScheduler job that fetches external data
   and stores it with a `last_synced_at` column
 - **Status workflow with allowed transitions** — explicit state machine
-  on a model
+  on a model (composes with `audit-log.md`)
+- **Soft delete + archive** — `deleted_at` column, query helpers, admin
+  "restore" UI
 - **Read-only public page backed by admin CRUD** — `(public)/`-route-group
   pattern, beyond what the example `Item` already shows
-- **Workspaces / multi-tenant migration** — already covered in
-  [`../growth-paths/multi-tenant.md`](../growth-paths/multi-tenant.md);
-  could be re-packaged as a recipe
+
+### Internal Tools track
+
+These layer onto the existing SSO, admin-users, and email-intake
+recipes to make Baseplate a credible internal-app foundation.
+
+- **Google Workspace connector** — read Drive files, list Docs/Sheets,
+  optionally Calendar. Service-account auth.
+- **Microsoft 365 / Graph connector** — SharePoint, OneDrive, Outlook
+  files. Most Microsoft-shop internal tools need this.
+- **Read-only database sync** — pull from an existing operational
+  database (Postgres / MySQL / SQL Server) into Baseplate tables on a
+  schedule; explicit allowlist of source queries/views.
+- **Outbound email notifications** — SES / Postmark / SendGrid /
+  Resend, with templates and unsubscribe handling
+- **AI extraction + human-in-the-loop review** — upload doc, LLM
+  extracts structured fields, admin reviews and approves. The
+  canonical "AI workflow" use case.
+- **Webhook-based email intake** — Postmark/SendGrid inbound webhooks
+  as a lower-latency alternative to IMAP polling
+
+### Growth-path recipes
+
+For apps moving from "small one-off" to something bigger. Living in
+[`../growth-paths/`](../growth-paths/) when they exist.
+
+- **Multi-tenant migration** — already written; see
+  [`../growth-paths/multi-tenant.md`](../growth-paths/multi-tenant.md)
+- **Celery / Redis worker for durable jobs** — when APScheduler's
+  in-process model isn't enough
+- **Stripe billing** — subscription + plan limits; for the SaaS path
+- **SAML SSO** — for enterprise customers who can't use OIDC
+- **Role-based access control** — beyond the `is_admin` binary

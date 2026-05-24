@@ -39,6 +39,7 @@ Baseplate is shaped for **single-tenant, admin-driven apps**: a logged-in admin 
 - **AI workflow with human-in-the-loop** — upload documents, LLM extracts/summarises, admin reviews and approves. Scheduler triggers extraction batches; the review queue is the admin-side product.
 - **Niche structured CMS** — content database with admin screens and a custom public frontend. Use when WordPress or Sanity is too generic and you want code ownership.
 - **Scheduled monitor** — scrape sources daily, store results, surface a digest for admin review. APScheduler handles the cron side; the admin UI is the review layer.
+- **Internal tool with company data** — admin app sitting near where work already happens: SSO login via Google Workspace or Microsoft Entra, inbox-as-queue via IMAP, optional read-only links to existing operational data. The base ships with simple local auth; the [SSO](docs/recipes/sso-oidc.md), [user-management](docs/recipes/admin-users.md), and [email-intake](docs/recipes/email-intake.md) recipes layer on when you're ready.
 
 If your app looks like one of these shapes, Baseplate gets you to "production-shaped foundation" in under an hour.
 
