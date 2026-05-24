@@ -18,7 +18,8 @@ A production-ready full-stack starter. Clone it, rename "Item" to your domain mo
 
 This is a starter, not a finished product. Be aware of these intentional limits before building on top:
 
-- **Single admin user** — auth uses one `ADMIN_USERNAME` + `ADMIN_PASSWORD_HASH` env pair, not a users table. A multi-user table is a planned next step (see `CLAUDE.md`). Don't design features that assume per-user data until that lands.
+- **No user-management UI yet** — the `users` table exists and supports multiple admins, but there's no admin page to create/list/delete them. The bootstrap admin is created from `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH` on first startup. Add a `/admin/users` page when you need more.
+- **No password reset / email verification** — no email infra is wired up. Passwords are managed by re-running `make hash-password` and updating the DB by hand, or via a future user-management UI.
 - **CSRF defense is `SameSite=lax` only** — adequate for most internal admin tools but not for cookie-auth with high-value writes. A double-submit token middleware is planned.
 - **No background queue** — `APScheduler` runs in-process for periodic jobs. Fine for cron-style work; not a substitute for Celery/Redis if you need durable retries or a separate worker pool.
 
@@ -45,19 +46,24 @@ Open `http://localhost:3001/admin/login` and log in with the username/password y
 │   │   ├── config.py           # Pydantic Settings (env vars)
 │   │   ├── database.py         # async engine + session factory
 │   │   ├── deps.py             # FastAPI dependencies (auth)
+│   │   ├── bootstrap.py        # Idempotent admin-user seed on startup
+│   │   ├── rate_limit.py       # SlowAPI Limiter instance
 │   │   ├── main.py             # App factory, middleware, routers
 │   │   ├── models/
 │   │   │   ├── base.py         # DeclarativeBase, TimestampMixin, uuid_pk()
-│   │   │   └── item.py         # Example model
+│   │   │   ├── item.py         # Example model
+│   │   │   └── user.py         # Users (email, password_hash, is_admin)
 │   │   ├── schemas/
 │   │   │   ├── auth.py         # LoginRequest / LoginResponse
-│   │   │   └── item.py         # ItemCreate / ItemUpdate / ItemResponse
+│   │   │   ├── item.py         # ItemCreate / ItemUpdate / ItemResponse
+│   │   │   └── user.py         # UserResponse (excludes password_hash)
 │   │   ├── api/
 │   │   │   ├── auth.py         # POST /login, /logout, GET /me
 │   │   │   ├── items.py        # Admin CRUD (GET/POST/PATCH/DELETE)
 │   │   │   └── public.py       # Public read endpoints
 │   │   ├── services/
-│   │   │   └── items.py        # DB query logic, separate from routes
+│   │   │   ├── items.py        # DB query logic, separate from routes
+│   │   │   └── users.py        # get_by_email, create, authenticate
 │   │   └── tasks/
 │   │       └── scheduler.py    # APScheduler with placeholder job
 │   ├── alembic/                # Migration config + versions
@@ -93,7 +99,7 @@ Open `http://localhost:3001/admin/login` and log in with the username/password y
 | Variable              | Required | Default                                              | Description                            |
 |-----------------------|----------|------------------------------------------------------|----------------------------------------|
 | `DATABASE_URL`        | Yes      | `postgresql+asyncpg://myapp:myapp@localhost:5433/myapp` | Async PostgreSQL connection string  |
-| `ADMIN_USERNAME`      | Yes      | `admin`                                              | Login username                         |
+| `ADMIN_EMAIL`         | Yes      | —                                                    | Bootstrap admin's email (creates the first user on startup if none exists) |
 | `ADMIN_PASSWORD_HASH` | Yes      | —                                                    | bcrypt hash (generate with `make hash-password`) |
 | `JWT_SECRET`          | Yes      | —                                                    | Random string for signing tokens       |
 | `JWT_ALGORITHM`       | No       | `HS256`                                              | JWT signing algorithm                  |
@@ -129,12 +135,12 @@ The Next.js `next.config.ts` proxies all `/api/*` requests to the backend. The b
 
 ### Authentication
 
-1. User submits credentials to `POST /api/auth/login`
-2. Backend verifies against bcrypt hash, issues a JWT, sets it as an httpOnly cookie
-3. All subsequent requests include the cookie automatically
-4. `middleware.ts` on the frontend checks for the cookie and redirects to `/admin/login` if missing
-5. `useRequireAuth()` hook validates the token server-side via `GET /api/auth/me`
-6. Admin API routes use `Depends(get_current_admin)` which extracts and verifies the JWT from the cookie
+1. **Bootstrap**: on first startup with no users in the DB, `app/bootstrap.py:ensure_admin_user` creates an admin from `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH`. Idempotent — subsequent starts skip if any admin exists.
+2. **Login**: user submits `{ email, password }` to `POST /api/auth/login`. Backend looks up the user via `UserService.authenticate`, bcrypt-verifies the password, and issues a JWT with `sub = str(user.id)` set as an httpOnly cookie.
+3. **Subsequent requests** include the cookie automatically.
+4. `middleware.ts` on the frontend checks for the cookie and redirects to `/admin/login` if missing.
+5. `useRequireAuth()` hook validates the token server-side via `GET /api/auth/me`.
+6. Admin API routes either gate via `dependencies=[Depends(get_current_admin)]` on the router (cleanest when the route doesn't need the User) or accept `user: User = Depends(get_current_admin)` in the signature (when the route does).
 
 ### Backend patterns
 
@@ -319,7 +325,7 @@ project exists.
 
 1. Create a Railway project with three services: `backend`, `frontend`, and a PostgreSQL plugin.
 2. Set environment variables on each Railway service:
-   - **backend**: `DATABASE_URL` (from Postgres plugin), `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `COOKIE_SECURE=true`, `CORS_ORIGINS=["https://your-frontend.up.railway.app"]`
+   - **backend**: `DATABASE_URL` (from Postgres plugin), `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, `COOKIE_SECURE=true`, `CORS_ORIGINS=["https://your-frontend.up.railway.app"]`
    - **frontend**: `API_URL` (internal Railway URL of the backend, e.g. `http://backend.railway.internal:8001`)
 3. Add two GitHub **secrets** to your repo:
    - **`RAILWAY_TOKEN`** — a **workspace/account token** (Railway → Account Settings → Tokens). *Not* a per-project token. The workflow feeds it to the CLI as `RAILWAY_API_TOKEN`; a project token in this slot fails with `Invalid RAILWAY_TOKEN`.

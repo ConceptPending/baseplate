@@ -1,11 +1,13 @@
 import pytest
 
+from tests.conftest import TEST_ADMIN_EMAIL
+
 
 async def _login(client):
     """Helper to log in (cookie is stored on the client automatically)."""
     resp = await client.post(
         "/api/auth/login",
-        json={"username": "admin", "password": "testpass"},
+        json={"email": TEST_ADMIN_EMAIL, "password": "testpass"},
     )
     assert resp.status_code == 200
 
