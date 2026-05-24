@@ -21,6 +21,13 @@ All notable changes to this project are documented here. Format based on
 - `next.config.ts` rewrites — superseded by the route handler.
 - `ARG API_URL` / `ENV API_URL=$API_URL` in `frontend/Dockerfile` — no longer needed at build time.
 
+### Added (recipes)
+- `docs/recipes/` — guided transformations of Baseplate. First two:
+  - **`audit-log.md`** — append-only audit table with single-entry-point service, hooks into existing CRUD on `Item`, admin viewer. For compliance, case management, internal review queues.
+  - **`public-submission-and-admin-queue.md`** — the intake + review pattern. Unauthenticated public form (CSRF-exempt + rate-limited) → admin review queue with status workflow.
+- `docs/recipes/README.md` — index + recipe format spec ("what it is", "what you'll add", "step-by-step", "tests", "what to skip until you need it"). Naming conventions so future recipes are consistent.
+- README's "Extending Baseplate" section now points at the recipes directory.
+
 ### Added (OpenAPI typed client)
 - **`make generate-client`** — regenerates `frontend/src/lib/api-types.ts` from the FastAPI OpenAPI spec via `openapi-typescript`. No backend server needed; the new `backend/scripts/dump_openapi.py` imports `app.main` directly and prints the schema to stdout.
 - **`frontend/src/lib/api-types.ts`** — generated TypeScript types for every Pydantic schema. Committed so LLMs and `tsc` can rely on it without running the generator.
