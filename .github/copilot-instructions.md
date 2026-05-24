@@ -27,11 +27,10 @@ See the 10-step recipe in `README.md` under "Adding a new domain model". The exi
 
 ## Gotchas
 
-- **Ports**: local dev uses backend 8001, frontend 3001. Dockerfile exposes 8000 (`$PORT` in Railway). Don't reconcile in only one place.
+- **Ports**: backend `:8001`, frontend `:3001` everywhere (Makefile + both Dockerfiles). Railway injects `$PORT` to override at runtime.
 - **Startup validation**: with `DEBUG=false`, backend refuses to boot with default secrets (`app/config.py:28-39`).
 - **Backend tests use SQLite** via aiosqlite. Avoid Postgres-specific SQL in models without verifying SQLite compatibility.
-- **Vitest is node-env only** — React component tests don't work yet. Stick to pure-function tests like `__tests__/api.test.ts`.
-- **ESLint isn't in CI yet** — run `cd frontend && npm run lint` manually.
+- **Vitest uses happy-dom**; component tests with `@testing-library/react` work — see `__tests__/Button.test.tsx`.
 
 ## Patterns to avoid
 
@@ -52,6 +51,3 @@ Don't design around the current state of these — they're scheduled to change:
 - Users table replacing single-admin auth.
 - CSRF protection (double-submit token).
 - `python-jose` → `pyjwt`.
-- Pre-commit hooks (ruff + tsc).
-- Vitest jsdom config so component tests work.
-- ESLint in CI.

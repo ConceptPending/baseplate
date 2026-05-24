@@ -21,8 +21,6 @@ This is a starter, not a finished product. Be aware of these intentional limits 
 - **Single admin user** — auth uses one `ADMIN_USERNAME` + `ADMIN_PASSWORD_HASH` env pair, not a users table. A multi-user table is a planned next step (see `CLAUDE.md`). Don't design features that assume per-user data until that lands.
 - **CSRF defense is `SameSite=lax` only** — adequate for most internal admin tools but not for cookie-auth with high-value writes. A double-submit token middleware is planned.
 - **No background queue** — `APScheduler` runs in-process for periodic jobs. Fine for cron-style work; not a substitute for Celery/Redis if you need durable retries or a separate worker pool.
-- **Vitest is configured for node-env only** — component tests with React Testing Library don't work yet (the deps are installed but the config isn't wired). Stick to pure-function tests until the config is fixed.
-- **ESLint exists but isn't in CI** — run `cd frontend && npm run lint` manually until it's wired into `make lint` and the workflow.
 - **`python-jose` (JWT lib) is unmaintained** — migration to `pyjwt` is planned.
 
 ## Quick start
@@ -175,11 +173,12 @@ async def create_item(data: ItemCreate, admin=Depends(get_current_admin), db=Dep
 | `make dev-frontend`          | Frontend only on :3001                          |
 | `make db`                    | Start Postgres container on port 5433           |
 | `make install`               | `pip install -e ".[dev]"` + `npm install`       |
+| `make install-hooks`         | Register pre-commit hooks (ruff, tsc, eslint)   |
 | `make migrate`               | `alembic upgrade head`                          |
 | `make migrate-new msg="..."` | Generate a new auto-detected migration          |
 | `make test-backend`          | `pytest -v`                                     |
 | `make test-frontend`         | `vitest run`                                    |
-| `make lint`                  | Python compile check + Next.js ESLint           |
+| `make lint`                  | ruff (backend) + tsc + ESLint (frontend)        |
 | `make hash-password`         | Interactive bcrypt hash generator                |
 | `make stop`                  | Kill dev servers + stop Docker                  |
 | `make restart`               | Stop then start everything                      |
@@ -333,8 +332,7 @@ The `.github/workflows/deploy.yml` workflow (`CI & Deploy`):
 ### Railway environment notes
 
 - Railway provides `DATABASE_URL` in the standard `postgresql://` format. The backend config expects `postgresql+asyncpg://` — you may need to adjust the variable or add a prefix in Railway's variable references.
-- The backend Dockerfile exposes port 8001 via `uvicorn`. Railway auto-detects the port.
-- The frontend Dockerfile runs `next start` on port 3000. Set `PORT=3000` in Railway if it doesn't auto-detect.
+- Both Dockerfiles expose their dev ports (backend `8001`, frontend `3001`) and read `$PORT` at runtime. Railway injects `$PORT` automatically.
 - Run `make migrate` manually after the first deploy, or add a Railway deploy hook / release command.
 
 ## Testing
@@ -367,7 +365,6 @@ make test-frontend      # runs vitest run
 
 ## Gotchas and things to know
 
-- **Ports don't match between local and Docker.** Local dev uses backend `:8001` and frontend `:3001` (set in `Makefile`). The backend `Dockerfile` exposes `8000` and reads `$PORT` (Railway injects it). Don't reconcile these in only one place — both are correct for their environment.
 - **`/docs` is disabled in production.** Set `DEBUG=true` to enable the Swagger UI at `/docs` and ReDoc at `/redoc`. This is controlled in `main.py`.
 - **Rate limiting** is set to 60 requests/minute globally via SlowAPI. Adjust in `main.py`. Add per-endpoint limits with `@limiter.limit("10/minute")` on individual route handlers.
 - **The middleware.ts deprecation warning** — Next.js 16 is renaming the `middleware.ts` convention to `proxy.ts`. The current file still works but you'll see a build warning. Rename when ready.

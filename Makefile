@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend db migrate lint install stop restart
+.PHONY: dev dev-backend dev-frontend db migrate lint install install-hooks stop restart
 
 # Start everything
 dev:
@@ -17,6 +17,9 @@ install:
 	cd backend && pip install -e ".[dev]"
 	cd frontend && npm install
 
+install-hooks:
+	pre-commit install
+
 migrate:
 	cd backend && PYTHONPATH=. alembic upgrade head
 
@@ -26,6 +29,7 @@ migrate-new:
 lint:
 	cd backend && ruff check app/ tests/
 	cd frontend && npx tsc --noEmit
+	cd frontend && npm run lint
 
 test-backend:
 	cd backend && PYTHONPATH=. pytest -v

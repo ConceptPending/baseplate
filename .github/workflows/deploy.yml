@@ -48,6 +48,8 @@ jobs:
         run: npm ci
       - name: Typecheck
         run: npx tsc --noEmit
+      - name: Lint (ESLint)
+        run: npm run lint
       - name: Tests
         run: npx vitest run
       - name: Build
