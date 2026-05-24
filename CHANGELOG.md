@@ -43,6 +43,7 @@ All notable changes to this project are documented here. Format based on
 ### Changed (README headline)
 - Hoisted **"Too important for spreadsheets. Too specific for SaaS."** to a blockquote immediately under the badges, before the tagline. The phrase now leads the README rather than living buried in "Why one-off apps matter now." Section 2 rewritten to reference the line inline instead of repeating it as a callout.
 - GitHub repo description updated to lead with the same line.
+- Dropped the specific "~24 files of business logic" claim (was accurate at v0.1.0; the codebase has grown to ~50 source files and the literal number was undersold + would keep drifting). The substantive claim — "small enough to fit in a coding agent's context window" — stays.
 
 ### Changed (Internal Tools surface)
 - README's "What you can build with this" list adds **"Internal tool with company data"** as a sixth shape, naming the SSO + user-management + email-intake recipes as the optional layer between the small default app and full company-data integration.

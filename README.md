@@ -9,7 +9,7 @@
 
 A small, production-shaped full-stack foundation **designed to be safely extended by AI coding agents**.
 
-Most starter templates are designed for humans to read once and forget. This one is designed to be re-read by an LLM every session. The codebase is small enough (~24 files of business logic) to fit in a coding agent's context window, with conventions, gotchas, and extension recipes documented in [CLAUDE.md](CLAUDE.md) so the next change lands correctly the first time.
+Most starter templates are designed for humans to read once and forget. This one is designed to be re-read by an LLM every session. The codebase is deliberately small enough to fit in a coding agent's context window, with conventions, gotchas, and extension recipes documented in [CLAUDE.md](CLAUDE.md) so the next change lands correctly the first time.
 
 **Live demo**: https://frontend-production-7642.up.railway.app — public homepage + items list. Admin login behind a credential gate. See [DEPLOYMENT.md](DEPLOYMENT.md) for what it took to deploy it.
 
