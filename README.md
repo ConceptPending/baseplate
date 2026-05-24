@@ -356,7 +356,8 @@ Delete `deploy-railway.yml` and add a `deploy-<platform>.yml` alongside it. Use 
 
 - Railway provides `DATABASE_URL` in the standard `postgresql://` format. The backend config expects `postgresql+asyncpg://` — you may need to adjust the variable or add a prefix in Railway's variable references.
 - Both Dockerfiles expose their dev ports (backend `8001`, frontend `3001`) and read `$PORT` at runtime. Railway injects `$PORT` automatically.
-- Run `make migrate` manually after the first deploy, or add a Railway deploy hook / release command.
+- Both images run as **non-root** users (uid 1000 in each — `app` for backend, `node` for frontend) and ship a Docker `HEALTHCHECK` directive. The backend image is multi-stage so `build-essential` doesn't ship to production.
+- The backend Dockerfile's CMD runs `alembic upgrade head` before launching uvicorn, so migrations apply on every deploy. No manual `make migrate` needed in production.
 
 ## Testing
 
