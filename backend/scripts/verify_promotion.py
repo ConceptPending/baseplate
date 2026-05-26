@@ -229,6 +229,27 @@ TYPE_COMPATIBILITY: dict[str, set[str]] = {
 }
 
 
+def _check_promoted_entities(entities: list[dict], report: Report) -> None:
+    """Verify entities listed in reference/promoted-entities.json.
+
+    Same shape as manifest entities; reuses check_entities's logic via
+    a synthetic manifest. The claim prefix is `promoted-entity` rather
+    than `entity` so the source is visible. See baseplate#37 for the
+    motivation: the manifest only carries entities the Flatpack author
+    declared; the promotion plan often introduces more (Supplier,
+    ReviewBatch, ValidationError, etc.). Without this file the verifier
+    can't catch a missing introduced entity.
+    """
+    synthetic = {"entities": entities}
+    # Capture findings from check_entities by intercepting the report
+    # via a small adapter that rewrites claim prefixes.
+    base_findings = len(report.findings)
+    check_entities(synthetic, report)
+    for finding in report.findings[base_findings:]:
+        if finding.claim.startswith("entity "):
+            finding.claim = "promoted-" + finding.claim
+
+
 def _types_compatible(manifest_type: str | None, column_type) -> tuple[bool, str]:
     """Return (compatible, human-readable reason).
 
@@ -598,6 +619,26 @@ def _check_validations_by_keyword(rules: list[str], report: Report) -> None:
 # Entry point
 # -----------------------------------------------------------------------------
 
+def read_promoted_entities(flatpack_path: Path) -> dict:
+    """Load reference/promoted-entities.json if present.
+
+    Per docs/promoting-a-flatpack.md, this file is a sibling of
+    original-flatpack.html. It lists entities the promotion plan
+    introduced beyond the Flatpack's manifest (e.g. Supplier,
+    ReviewBatch) — same field shape as the manifest's entities.
+
+    Returns {} if the file is absent (back-compat: the verifier
+    pre-#37 worked without it). Raises if it's present but
+    malformed."""
+    sibling = flatpack_path.parent / "promoted-entities.json"
+    if not sibling.exists():
+        return {}
+    try:
+        return json.loads(sibling.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"{sibling} is not valid JSON: {exc}")
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print(
@@ -612,15 +653,28 @@ def main() -> int:
         return 2
 
     manifest = read_manifest(flatpack_path)
+    promoted = read_promoted_entities(flatpack_path)
+
     print(
         f"Verifying against {manifest.get('name', '(unnamed)')} "
         f"v{manifest.get('version', '?')} ({flatpack_path.name})",
     )
     print(f"Archetype: {manifest.get('archetype', '-')}")
+    if promoted.get("entities"):
+        print(
+            f"Plus {len(promoted['entities'])} promoted entit"
+            f"{'y' if len(promoted['entities']) == 1 else 'ies'} from promoted-entities.json"
+        )
     print()
 
     report = Report()
     check_entities(manifest, report)
+    if promoted.get("entities"):
+        # Reuse the same field-walking logic by composing a synthetic
+        # manifest with the promoted entities under the `entities` key.
+        # The check labels itself "promoted-entity" so the source is
+        # visible in output.
+        _check_promoted_entities(promoted["entities"], report)
     check_exports(manifest, report)
     check_validations(manifest, report)
 

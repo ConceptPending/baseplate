@@ -54,6 +54,42 @@ cp /path/to/promotion-plan.md            reference/
 cp -R /path/to/baseplate-target          reference/   # optional
 ```
 
+If the promotion plan introduced entities beyond what the Flatpack's
+manifest declared (typical for `import-validate-store` and
+`workflow-with-checklist` archetypes), also write
+`reference/promoted-entities.json`:
+
+```json
+{
+  "entities": [
+    {
+      "name": "Supplier",
+      "source": "code-inferred",
+      "fields": [
+        { "name": "name", "type": "string", "required": true, "unique": true },
+        { "name": "aliases", "type": "list", "default": [] }
+      ]
+    },
+    {
+      "name": "ReviewBatch",
+      "source": "interview-required",
+      "fields": [
+        { "name": "uploaded_by_id", "type": "uuid", "required": true },
+        { "name": "status", "type": "enum", "values": ["pending","approved","rejected"] }
+      ]
+    }
+  ]
+}
+```
+
+`source` is informational (`code-inferred` | `interview-required`).
+Field shape matches the Flatpack manifest's `entities[].fields`
+exactly. The verifier reads this file alongside the inline manifest
+and asserts a model exists per entity. Without it, code-inferred
+entities are invisible to the verifier — see Baseplate issue #37 for
+why this is a separate file (the manifest is the Flatpack author's
+declaration; this is the promotion-time agent's declaration).
+
 The `reference/` directory is preserved on purpose. Two reasons:
 
 - **Parity verification.** `backend/scripts/verify_promotion.py`
