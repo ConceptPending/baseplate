@@ -117,12 +117,13 @@ def _model_class_names() -> set[str]:
 
 
 def check_entities(manifest: dict, report: Report) -> None:
-    """For each entity in the manifest, assert a matching SQLAlchemy model exists.
+    """For each entity in the manifest, assert a matching SQLAlchemy model exists
+    AND every declared field maps to a column with a compatible type.
 
-    Matching is by name with light normalisation: an entity named
-    `Invoice` matches a model named `Invoice` or a table named
-    `invoices` / `invoice`. The intent is to catch "we forgot to add a
-    model", not to mandate a specific naming convention.
+    Matching the entity is by name with light normalisation: an entity
+    named `Invoice` matches a model named `Invoice` or a table named
+    `invoices` / `invoice`. Once the model is matched, fields are walked
+    and each is asserted to exist as a column on the model. Closes #34.
     """
     entities = manifest.get("entities", [])
     if not entities:
@@ -133,6 +134,7 @@ def check_entities(manifest: dict, report: Report) -> None:
         return
 
     tables = _table_names()
+    table_objects = {t.name: t for t in Base.metadata.tables.values()}
     models = _model_class_names()
 
     for entity in entities:
@@ -143,20 +145,110 @@ def check_entities(manifest: dict, report: Report) -> None:
 
         norm = name.lower()
         candidate_tables = {norm, norm + "s", norm.rstrip("y") + "ies"}
+        matched_tables = candidate_tables & tables
 
-        if name in models or candidate_tables & tables:
-            report.ok(f"entity {name}", "model present")
-        else:
+        if name not in models and not matched_tables:
             report.miss(
                 f"entity {name}",
                 f"no model named {name!r} or table in {sorted(candidate_tables)}; "
                 f"available tables: {sorted(tables)}",
             )
+            continue
 
-        # TODO(verifier-v2): walk entity.fields and assert each one exists
-        # as a column on the matched model. For now we only verify the
-        # entity is present at all — the strongest signal of a forgotten
-        # promotion step.
+        report.ok(f"entity {name}", "model present")
+
+        # Walk fields. Find the SQLAlchemy table to use for column
+        # lookups. Preference: the table whose name matches a candidate
+        # (covers Invoice → invoices); fallback to whichever table has
+        # the most field-name overlap.
+        fields = entity.get("fields") or []
+        if not fields:
+            continue
+
+        table = None
+        for t in matched_tables:
+            if t in table_objects:
+                table = table_objects[t]
+                break
+        if table is None:
+            # Last-resort: pick by mapper class name.
+            for mapper in Base.registry.mappers:
+                if mapper.class_.__name__ == name:
+                    table = mapper.local_table
+                    break
+        if table is None:
+            report.warn(
+                f"entity {name} fields",
+                "couldn't resolve a table for field checks",
+            )
+            continue
+
+        column_names = {c.name for c in table.columns}
+        for field in fields:
+            fname = field.get("name")
+            ftype = field.get("type")
+            if not fname:
+                report.miss(f"entity {name} field", "field missing 'name'")
+                continue
+            if fname not in column_names:
+                report.miss(
+                    f"entity {name}.{fname}",
+                    f"no column named {fname!r} on table {table.name!r}",
+                )
+                continue
+            # Column exists — check type compatibility.
+            col = table.columns[fname]
+            ok, detail = _types_compatible(ftype, col.type)
+            if ok:
+                report.ok(
+                    f"entity {name}.{fname}",
+                    detail,
+                )
+            else:
+                report.warn(
+                    f"entity {name}.{fname}",
+                    f"type {ftype!r} → column type {type(col.type).__name__}: {detail}",
+                )
+
+
+# Loose type-compatibility map. Each manifest field type maps to a set of
+# SQLAlchemy type-class names that are considered acceptable. Add to this
+# as new field types appear in promoted Flatpacks.
+TYPE_COMPATIBILITY: dict[str, set[str]] = {
+    "string":   {"String", "Text", "Unicode", "VARCHAR"},
+    "text":     {"Text", "String", "TEXT"},
+    "number":   {"Numeric", "Integer", "Float", "BigInteger", "DECIMAL", "INTEGER", "FLOAT"},
+    "integer":  {"Integer", "BigInteger", "SmallInteger", "INTEGER"},
+    "date":     {"Date", "DATE"},
+    "datetime": {"DateTime", "TIMESTAMP"},
+    "boolean":  {"Boolean", "BOOLEAN"},
+    "enum":     {"Enum", "ENUM", "String", "VARCHAR"},
+    "json":     {"JSON", "JSONB", "ARRAY"},
+    "list":     {"JSON", "JSONB", "ARRAY"},
+    "uuid":     {"UUID", "CHAR"},
+}
+
+
+def _types_compatible(manifest_type: str | None, column_type) -> tuple[bool, str]:
+    """Return (compatible, human-readable reason).
+
+    Manifest types are descriptive labels, not Python types. The map
+    above accepts a small set of SQLAlchemy type-class names per
+    manifest label. Unknown manifest types pass with a 'no rule for X'
+    note — better to ignore than false-fail."""
+    if manifest_type is None:
+        return True, "no manifest type to check"
+
+    col_type_name = type(column_type).__name__
+    # Some manifest types include suffixes like 'list[string]' — strip to the head.
+    head = manifest_type.split("[", 1)[0].strip().lower()
+
+    allowed = TYPE_COMPATIBILITY.get(head)
+    if allowed is None:
+        return True, f"no compatibility rule for manifest type {manifest_type!r}; accepted as {col_type_name}"
+    if col_type_name in allowed:
+        return True, f"manifest {manifest_type} ↔ SA {col_type_name}"
+    return False, f"expected one of {sorted(allowed)}"
 
 
 # -----------------------------------------------------------------------------
