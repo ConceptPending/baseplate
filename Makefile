@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend db migrate lint install install-hooks generate-client stop restart
+.PHONY: dev dev-backend dev-frontend db migrate lint install install-hooks generate-client stop restart verify-promotion
 
 # Start everything
 dev:
@@ -60,3 +60,9 @@ restart: stop
 
 hash-password:
 	@python -c "import bcrypt, getpass; print(bcrypt.hashpw(getpass.getpass('Password: ').encode(), bcrypt.gensalt()).decode())"
+
+# Verify this project honours the Flatpack it was promoted from.
+# Expects reference/original-flatpack.html in the project root.
+# See docs/promoting-a-flatpack.md.
+verify-promotion:
+	cd backend && DEBUG=true PYTHONPATH=. python scripts/verify_promotion.py ../reference/original-flatpack.html

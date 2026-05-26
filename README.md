@@ -41,6 +41,22 @@ Baseplate is shaped for **single-tenant, admin-driven apps**: a logged-in admin 
 
 If your app looks like one of these shapes, Baseplate gets you to "production-shaped foundation" in under an hour.
 
+## Coming from Flatpack?
+
+Baseplate is the production-shaped foundation that a [Flatpack](https://github.com/ConceptPending/flatpack) graduates into when "my tool" becomes "our tool" — when a personal single-file utility crosses a real promotion trigger (a second user, shared state, audit history, server-side secrets).
+
+You don't *convert* a Flatpack into a Baseplate project — a Flatpack is one HTML file, this is a full stack. What promotes is the understanding embedded in the Flatpack's inline manifest: entities, validations, exports, sample data, edge cases, test cases. The Flatpack stays alongside the Baseplate version as a reference artifact for parity checks.
+
+If you have a promotion plan in hand:
+
+1. Read [`docs/promoting-a-flatpack.md`](docs/promoting-a-flatpack.md) — the receiving flow.
+2. Map the archetype to a recipe set via [`docs/flatpack-archetype-to-recipe-map.md`](docs/flatpack-archetype-to-recipe-map.md).
+3. Drop the Flatpack artifacts into `reference/`.
+4. Apply the recipes, walk the confidence tiers in the plan.
+5. Verify with `make verify-promotion`.
+
+If you don't have a Flatpack yet but your idea is small enough that you're not sure Baseplate is the right starting point, try [Flatpack](https://github.com/ConceptPending/flatpack) first. That repo's [`prompts/generate-flatpack.md`](https://github.com/ConceptPending/flatpack/blob/main/prompts/generate-flatpack.md) is ~100 lines, fits in any agent's context, and produces a working single-file tool you can use locally. Promote later if and when it stops being personal.
+
 ## Who this is for
 
 - **Solo founders** prototyping a real product with LLM assistance — who don't want to trust the agent to invent auth, CSRF, and deployment from scratch.
