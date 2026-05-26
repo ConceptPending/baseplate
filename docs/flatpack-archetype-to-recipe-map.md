@@ -74,7 +74,12 @@ surface the broken ones for correction.
   `Supplier`, `Account`).
 
 **Worked example:**
-[invoice-cleaner-promotion](https://github.com/ConceptPending/flatpack/tree/main/case-studies/invoice-cleaner-promotion).
+[flatpack-invoice-review-example](https://github.com/ConceptPending/flatpack-invoice-review-example)
+— a real Baseplate-shaped project scaffolded from this archetype.
+`make verify-promotion` passes; 33 tests pass; the README's
+"What we learned" section lists bridge issues the exercise surfaced.
+The source Flatpack and promotion plan it walked are at
+[flatpack/case-studies/invoice-cleaner-promotion](https://github.com/ConceptPending/flatpack/tree/main/case-studies/invoice-cleaner-promotion).
 
 ---
 
