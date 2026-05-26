@@ -298,10 +298,10 @@ EXPORT_URL_HINTS: dict[str, list[str]] = {
     "errors_csv":           ["/errors", ".csv"],
     "csv":                  [".csv", "/export"],
     "json":                 [".json", "/export"],
-    "markdown":             [".md", "/export"],
-    "markdown_clipboard":   ["/markdown", "/summary"],  # often server-rendered then copied client-side
+    "markdown":             [".md", "/export", "/markdown"],   # /markdown discovered by flatpack-team-kickoff-example
+    "markdown_clipboard":   ["/markdown", "/summary"],         # often server-rendered then copied client-side
     "summary_clipboard":    ["/summary"],
-    "summary_print":        ["/summary", "/print"],     # closes baseplate#35 — promoted apps usually expose a /summary endpoint
+    "summary_print":        ["/summary", "/print"],            # closes baseplate#35 — promoted apps usually expose a /summary endpoint
     "print_pdf":            ["/print", ".pdf"],
 }
 
