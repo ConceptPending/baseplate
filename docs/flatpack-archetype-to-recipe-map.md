@@ -103,7 +103,15 @@ matter, or kickoff. Progress + notes per item; report on completion.
 - The `Run` entity (one walk-through of a template) and its progress
   state.
 
-**Worked example:** none yet.
+**Worked example:**
+[flatpack-team-kickoff-example](https://github.com/ConceptPending/flatpack-team-kickoff-example)
+— a real Baseplate-shaped project scaffolded from this archetype.
+`make verify-promotion` reports 29 OK / 3 MISS / 5 WARN; the MISSes
+are documented legitimate semantic divergences (the Flatpack's
+inline `done`/`note` fields move to a separate `ChecklistProgress`
+table for per-user attribution). The source Flatpack and promotion
+plan are at
+[flatpack/case-studies/team-kickoff-promotion](https://github.com/ConceptPending/flatpack/tree/main/case-studies/team-kickoff-promotion).
 
 ---
 
