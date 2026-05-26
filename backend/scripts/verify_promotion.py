@@ -226,59 +226,279 @@ def check_exports(manifest: dict, report: Report) -> None:
 
 
 # -----------------------------------------------------------------------------
-# Validation rules check — partial: best-effort text search in app/
+# Validation check.
+#
+# If the manifest carries `validation_predicates` (the structured form from
+# flatpack#1), we resolve each predicate against actual Pydantic field
+# declarations and SQLAlchemy column constraints. This is the strong path
+# and is what closes baseplate#33 and #36.
+#
+# Otherwise we fall back to a tightened keyword scan — restricted to
+# function bodies inside *Service classes and @field_validator decorated
+# functions, not module-level comments. Every keyword-match passes as a
+# WARN (not OK) to keep the trust-surface visible.
 # -----------------------------------------------------------------------------
 
 APP_ROOT = Path(__file__).resolve().parents[1] / "app"
 
 
 def check_validations(manifest: dict, report: Report) -> None:
-    """For each plain-English validation rule, search app/ for keyword evidence.
+    predicates = manifest.get("validation_predicates")
+    if predicates:
+        _check_predicates(predicates, report)
+        # If we have predicates, the plain-text rules are redundant signal.
+        return
+    _check_validations_by_keyword(manifest.get("validations", []), report)
 
-    This is intentionally weak: it tells you "no code in app/ mentions
-    'invoice_date' or 'in the future' anywhere" — which is a useful
-    signal — without trying to interpret natural-language rules
-    formally.
+
+# --- Strong path: structured predicates --------------------------------------
+
+def _collect_pydantic_fields() -> dict[str, list[tuple[str, object]]]:
+    """Return a map of field name → list of (qualified_owner, FieldInfo) pairs.
+
+    Walks every BaseModel subclass that's been imported by virtue of
+    app.main loading.
     """
-    rules = manifest.get("validations", [])
+    try:
+        from pydantic import BaseModel
+    except ImportError:
+        return {}
+
+    out: dict[str, list[tuple[str, object]]] = {}
+
+    def walk(cls):
+        for sub in cls.__subclasses__():
+            for name, info in sub.model_fields.items():
+                out.setdefault(name, []).append((sub.__name__, info))
+            walk(sub)
+
+    walk(BaseModel)
+    return out
+
+
+def _collect_columns() -> dict[str, list[tuple[str, object]]]:
+    """Return a map of column name → list of (table_name, Column) pairs."""
+    out: dict[str, list[tuple[str, object]]] = {}
+    for table in Base.metadata.tables.values():
+        for column in table.columns:
+            out.setdefault(column.name, []).append((table.name, column))
+    return out
+
+
+def _check_predicate_pydantic(
+    field_name: str,
+    constraint: str,
+    value,
+    pyd: dict[str, list[tuple[str, object]]],
+) -> tuple[bool, str]:
+    """Look for evidence in Pydantic field declarations. Returns
+    (verified, detail)."""
+    if field_name not in pyd:
+        return False, f"no Pydantic field named {field_name!r}"
+
+    # We may have multiple Pydantic models defining the field (e.g.
+    # Create, Update, Response). It only needs to be honoured in one
+    # input schema — pick the strongest evidence across all matches.
+    for owner, info in pyd[field_name]:
+        # Pydantic v2: constraints live in info.metadata as a list of
+        # constraint objects. The class names are stable strings.
+        constraints = list(getattr(info, "metadata", []) or [])
+        type_str = repr(getattr(info, "annotation", None))
+
+        def has_meta(name: str, attr: str | None = None, expected=None) -> bool:
+            for m in constraints:
+                if type(m).__name__ == name:
+                    if attr is None:
+                        return True
+                    return getattr(m, attr, None) == expected
+            return False
+
+        if constraint == "required":
+            if info.is_required():
+                return True, f"{owner}.{field_name} is_required()"
+        elif constraint in ("gt", "gte", "lt", "lte"):
+            mapping = {"gt": "Gt", "gte": "Ge", "lt": "Lt", "lte": "Le"}
+            attr = {"gt": "gt", "gte": "ge", "lt": "lt", "lte": "le"}[constraint]
+            if has_meta(mapping[constraint], attr, value):
+                return True, f"{owner}.{field_name}: {constraint} {value}"
+        elif constraint == "min_length":
+            if has_meta("MinLen", "min_length", value):
+                return True, f"{owner}.{field_name}: min_length {value}"
+        elif constraint == "max_length":
+            if has_meta("MaxLen", "max_length", value):
+                return True, f"{owner}.{field_name}: max_length {value}"
+        elif constraint == "format":
+            # 'format' is loose — we match the annotation type to common formats.
+            mapping = {
+                "date":     ("date",),
+                "datetime": ("datetime",),
+                "email":    ("EmailStr",),
+                "url":      ("HttpUrl", "AnyUrl"),
+                "uuid":     ("UUID",),
+            }
+            if any(m in type_str for m in mapping.get(value, ())):
+                return True, f"{owner}.{field_name} annotated as {value}"
+        elif constraint == "one_of":
+            # 'one_of' tends to map to Pydantic Literal[...] or Enum.
+            if "Literal" in type_str or "Enum" in type_str:
+                return True, f"{owner}.{field_name} appears restricted (Literal/Enum)"
+        elif constraint == "not_in_future":
+            # No native Pydantic constraint — handled at validator level.
+            # We let the column / fallback layer pick this up.
+            return False, "not_in_future not expressible in plain Pydantic"
+        elif constraint == "unique":
+            # Pydantic doesn't carry uniqueness — it's a DB-layer concern.
+            return False, "unique is a column-layer constraint"
+        # Unknown constraint kinds fall through.
+
+    return False, f"Pydantic field {field_name} found, but no matching {constraint}"
+
+
+def _check_predicate_column(
+    field_name: str,
+    constraint: str,
+    value,
+    cols: dict[str, list[tuple[str, object]]],
+) -> tuple[bool, str]:
+    if field_name not in cols:
+        return False, f"no column named {field_name!r}"
+
+    for table_name, col in cols[field_name]:
+        if constraint == "required":
+            if not col.nullable:
+                return True, f"{table_name}.{field_name} NOT NULL"
+        elif constraint == "unique":
+            if col.unique or any(
+                getattr(uc, "columns", None) and any(c.name == field_name for c in uc.columns)
+                for uc in col.table.constraints
+                if uc.__class__.__name__ == "UniqueConstraint"
+            ):
+                return True, f"{table_name}.{field_name} unique"
+        elif constraint == "max_length":
+            length = getattr(col.type, "length", None)
+            if length is not None and (value is None or length == value):
+                return True, f"{table_name}.{field_name} length {length}"
+        elif constraint == "format":
+            # SQLAlchemy types ~ format tags.
+            type_name = type(col.type).__name__
+            mapping = {
+                "date": ("Date",),
+                "datetime": ("DateTime",),
+                "uuid": ("UUID",),
+            }
+            if type_name in mapping.get(value, ()):
+                return True, f"{table_name}.{field_name} column type {type_name}"
+        # gt/gte/lt/lte: would live in CHECK constraints; not commonly
+        # surfaced by SQLAlchemy without explicit declaration. Skipped.
+
+    return False, f"column {field_name} found, but no matching {constraint}"
+
+
+def _check_predicates(predicates: list[dict], report: Report) -> None:
+    pyd = _collect_pydantic_fields()
+    cols = _collect_columns()
+
+    for p in predicates:
+        field = p.get("field")
+        constraint = p.get("constraint")
+        value = p.get("value")
+        if not field or not constraint:
+            report.miss("predicate", f"malformed predicate: {p!r}")
+            continue
+
+        claim = f"predicate {field}:{constraint}"
+        if value is not None:
+            claim += f"={value!r}"
+
+        # Try Pydantic first (the API boundary is where validation lives).
+        ok, detail = _check_predicate_pydantic(field, constraint, value, pyd)
+        if ok:
+            report.ok(claim, detail)
+            continue
+
+        ok, detail2 = _check_predicate_column(field, constraint, value, cols)
+        if ok:
+            report.ok(claim, detail2)
+            continue
+
+        # If neither layer can confirm it, we WARN rather than MISS — the
+        # constraint may be implemented via a custom validator we can't
+        # introspect.
+        report.warn(claim, f"{detail}; {detail2}")
+
+
+# --- Fallback path: tightened keyword scan ----------------------------------
+
+# Match function bodies inside *Service classes and @field_validator-decorated
+# functions. We collect the source-text inside these regions and scan there
+# instead of across all of app/.
+
+_SERVICE_OR_VALIDATOR_RE = re.compile(
+    r"(?:^class\s+\w+Service\b[^\n]*:\n(?:[ \t].*\n)+)"
+    r"|(?:^[ \t]*@field_validator\b[^\n]*\n(?:[ \t]*@[\w.()=\"', ]+\n)*[ \t]*def\s+\w+[\s\S]*?(?=\n\S|\Z))",
+    re.MULTILINE,
+)
+
+
+def _validation_corpus() -> str:
+    """Concatenate just the *Service bodies and @field_validator-decorated
+    functions across app/. This intentionally drops module-level
+    comments — which is where the old keyword-scan was producing false
+    positives in the worked example."""
+    sources = [p.read_text(encoding="utf-8") for p in APP_ROOT.rglob("*.py")]
+    out_parts: list[str] = []
+    for src in sources:
+        out_parts.extend(_SERVICE_OR_VALIDATOR_RE.findall(src))
+    return "\n".join(out_parts).lower()
+
+
+def _check_validations_by_keyword(rules: list[str], report: Report) -> None:
     if not rules:
         report.warn("validations", "manifest declares no validations")
         return
 
-    # Read all .py files in app/ once.
-    sources = {p: p.read_text(encoding="utf-8") for p in APP_ROOT.rglob("*.py")}
-    if not sources:
-        report.warn("validations", f"no Python sources under {APP_ROOT}")
+    corpus = _validation_corpus()
+    if not corpus:
+        report.warn(
+            "validations",
+            f"no *Service / @field_validator code found under {APP_ROOT} — "
+            f"fallback keyword scan can't run",
+        )
         return
 
-    combined = "\n".join(sources.values()).lower()
+    stop = {
+        "the", "and", "must", "should", "with", "when", "this", "that",
+        "than", "from", "into", "have", "been", "were", "will", "would",
+        "could", "any", "all", "are", "not",
+    }
 
     for rule in rules:
-        # Pick keywords from the rule that look like field names or
-        # numerical constraints. Drop stopwords; keep tokens of length
-        # >= 4 or numbers. This is heuristic by design.
         tokens = [
             t.strip(",.:;\"'`()[]")
             for t in re.split(r"\s+", rule.lower())
             if t.strip(",.:;\"'`()[]")
         ]
-        stop = {
-            "the", "and", "must", "should", "with", "when", "this",
-            "that", "than", "from", "into", "have", "been", "were",
-            "will", "would", "could", "any", "all", "are", "not",
-        }
         keywords = [t for t in tokens if (len(t) >= 4 and t not in stop) or t.isdigit()]
         if not keywords:
             report.warn(f"validation: {rule}", "no keywords extracted")
             continue
 
-        hits = [k for k in keywords if k in combined]
+        hits = [k for k in keywords if k in corpus]
         if hits:
-            report.ok(f"validation: {rule}", f"keywords matched: {hits}")
+            # WARN (not OK) — keyword fallback is weak signal even when it
+            # matches inside the right kind of function. The strong path
+            # (predicates) is what produces OK.
+            report.warn(
+                f"validation: {rule}",
+                f"keyword fallback matched {hits} inside *Service / "
+                f"@field_validator; consider adding a validation_predicate "
+                f"for stronger signal",
+            )
         else:
             report.miss(
                 f"validation: {rule}",
-                f"none of {keywords} found in app/ — rule may not be implemented",
+                f"none of {keywords} found in *Service or @field_validator "
+                f"code in app/ — rule may not be implemented",
             )
 
 
