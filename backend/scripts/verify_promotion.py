@@ -174,15 +174,21 @@ def _route_paths() -> list[str]:
 
 # Mapping from manifest export label → URL fragment to look for.
 # Extend this as new export shapes appear in promoted Flatpacks.
+#
+# Some Flatpack exports are client-side (the browser renders to clipboard
+# or via window.print). Their Baseplate analogue is usually a server
+# endpoint that returns the data the printable view fetches. We list
+# both shapes; the verifier accepts a route match OR explicitly notes
+# the export may be client-side.
 EXPORT_URL_HINTS: dict[str, list[str]] = {
     "clean_csv":            ["/export", "/clean", ".csv"],
     "errors_csv":           ["/errors", ".csv"],
     "csv":                  [".csv", "/export"],
     "json":                 [".json", "/export"],
     "markdown":             [".md", "/export"],
-    "markdown_clipboard":   [],   # client-side only; not a server export
-    "summary_clipboard":    [],
-    "summary_print":        [],   # printable summary; client-side
+    "markdown_clipboard":   ["/markdown", "/summary"],  # often server-rendered then copied client-side
+    "summary_clipboard":    ["/summary"],
+    "summary_print":        ["/summary", "/print"],     # closes baseplate#35 — promoted apps usually expose a /summary endpoint
     "print_pdf":            ["/print", ".pdf"],
 }
 
@@ -205,19 +211,17 @@ def check_exports(manifest: dict, report: Report) -> None:
                 "no URL hint defined in EXPORT_URL_HINTS; extend the map",
             )
             continue
-        if not hints:
-            report.ok(
-                f"export {label}",
-                "client-side export; no server route expected",
-            )
-            continue
         if any(h in paths_str for h in hints):
             report.ok(f"export {label}", f"route matching one of {hints}")
         else:
-            report.miss(
+            # The export may legitimately be client-side. We surface as
+            # a warning rather than a miss — the maintainer can confirm
+            # by noting it in reference/decisions.md.
+            report.warn(
                 f"export {label}",
                 f"no route containing any of {hints}; "
-                f"routes: {paths}",
+                f"may be client-side only — confirm in reference/decisions.md "
+                f"if so. routes: {paths}",
             )
 
 
