@@ -8,6 +8,7 @@ import { useRequireAuth } from "@/lib/auth";
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/items", label: "Items" },
+  { href: "/admin/audit-log", label: "Audit log" },
 ];
 
 export default function AdminLayout({
