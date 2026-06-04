@@ -20,6 +20,16 @@ class Settings(BaseSettings):
     cookie_secure: bool = True
     cors_origins: list[str] = ["http://localhost:3001"]
 
+    # Database connection pool. Defaults are sane for a small single-instance
+    # app; raise pool_size / max_overflow under real concurrency. pool_pre_ping
+    # is always on so a stale connection (e.g. after the DB restarts or a
+    # cloud provider recycles it) is detected and replaced instead of erroring
+    # the request. Ignored by the SQLite test engine (see tests/conftest.py).
+    db_pool_size: int = 5
+    db_max_overflow: int = 10
+    db_pool_timeout: int = 30
+    db_pool_recycle: int = 1800  # seconds; recycle connections every 30 min
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 
