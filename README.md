@@ -197,6 +197,10 @@ Open `http://localhost:3001/admin/login` and log in with the username/password y
 | `COOKIE_SECURE`       | No       | `true`                                               | Set `false` for local HTTP dev         |
 | `CORS_ORIGINS`        | No       | `["http://localhost:3001"]`                          | Allowed CORS origins (JSON list)       |
 | `DEBUG`               | No       | `false`                                              | Enables `/docs` and `/redoc`, disables startup validation |
+| `DB_POOL_SIZE`        | No       | `5`                                                  | SQLAlchemy connection pool size (per process)          |
+| `DB_MAX_OVERFLOW`     | No       | `10`                                                 | Extra connections allowed above `DB_POOL_SIZE` under load |
+| `DB_POOL_TIMEOUT`     | No       | `30`                                                 | Seconds to wait for a free connection before erroring  |
+| `DB_POOL_RECYCLE`     | No       | `1800`                                               | Recycle connections older than this many seconds       |
 
 ### Frontend (`frontend/.env.local`)
 
@@ -446,7 +450,7 @@ The portability contract — what every supported platform must provide — is:
 | Standard Docker containers | Both services build as multi-stage images |
 | `$PORT` env var at runtime | Both services bind to `$PORT` (or their dev default) |
 | Non-root container runtime | Both run as uid 1000 by default |
-| HTTP healthchecks | `/api/health` (backend), `/healthz` (frontend) |
+| HTTP healthchecks | `/api/health` (backend **readiness** — checks the DB), `/api/health/live` (backend **liveness**), `/healthz` (frontend) |
 | Environment-variable config | All secrets and tunables are env-driven |
 | Managed Postgres | The only required external service |
 | One-off command on deploy | Backend's CMD runs `alembic upgrade head` before `uvicorn` |
@@ -533,3 +537,7 @@ make test-frontend      # runs vitest run
 - **`from_attributes = True`** on response schemas means you return SQLAlchemy model instances directly from routes — Pydantic serializes them automatically.
 - **The frontend proxies `/api/*`** to the backend via Next.js rewrites in `next.config.ts`. The browser never talks to the backend directly. This avoids CORS issues and keeps the backend URL private.
 - **Cookies require HTTPS in production.** `COOKIE_SECURE=true` (the default) means auth cookies won't be sent over plain HTTP. This is correct for production. Set `false` for local dev without HTTPS.
+- **Health endpoints split readiness from liveness.** `/api/health` round-trips a `SELECT 1` and returns **503** if the DB is unreachable, so an orchestrator stops routing to a broken instance — this is the endpoint the Docker `HEALTHCHECK` targets. `/api/health/live` is DB-independent (process-up only) for liveness probes.
+- **Security headers ship by default.** `frontend/next.config.ts` sets a Content-Security-Policy, HSTS, `X-Frame-Options: DENY`, `nosniff`, a `Referrer-Policy`, and a minimal `Permissions-Policy` on every response. The CSP uses `'unsafe-inline'` for scripts (required by Next's inline hydration without nonce middleware); the file documents the path to nonce-based hardening. Verify with `curl -I` against the running frontend.
+- **Error-reporting seam, no vendor lock-in.** Unhandled backend exceptions go through `app/observability.py:report_exception` (returns a generic 500, never leaks a stack trace); the frontend mirror is `lib/observability.ts:reportError`. Both just log by default — wire Sentry/GlitchTip in that one function. No monitoring dependency ships in the base.
+- **DB connection pool is tunable.** `DB_POOL_SIZE` / `DB_MAX_OVERFLOW` / `DB_POOL_TIMEOUT` / `DB_POOL_RECYCLE` configure the SQLAlchemy pool (`app/database.py`); `pool_pre_ping` is always on so recycled/stale connections are detected instead of erroring a request.

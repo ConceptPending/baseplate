@@ -1,4 +1,5 @@
 import { getCSRFToken } from "./csrf";
+import { reportError } from "./observability";
 import type { Item, ItemCreate, ItemUpdate, LoginResponse, User } from "./types";
 
 const BASE = "";
@@ -16,10 +17,23 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
     if (token) headers["X-CSRF-Token"] = token;
   }
 
-  const res = await fetch(`${BASE}${path}`, { ...options, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, { ...options, headers });
+  } catch (err) {
+    // Network-level failure (offline, DNS, connection reset) — always
+    // unexpected, so report it before surfacing to the caller.
+    reportError(err, { path, method });
+    throw err;
+  }
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: res.statusText }));
+    // 4xx are expected (auth, validation) and handled by callers; only
+    // report server-side failures through the observability seam.
+    if (res.status >= 500) {
+      reportError(new Error(`API ${res.status} ${path}`), { path, method });
+    }
     throw new Error(error.detail || `API error: ${res.status}`);
   }
 
