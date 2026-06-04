@@ -30,6 +30,8 @@ jobs:
         run: ruff check app/ tests/
       - name: Tests
         run: PYTHONPATH=. pytest -q
+      - name: Portability contract
+        run: python scripts/check_portability.py
 
   test-frontend:
     name: Frontend — typecheck, lint, tests, build

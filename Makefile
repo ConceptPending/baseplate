@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend db migrate lint install install-hooks generate-client stop restart verify-promotion
+.PHONY: dev dev-backend dev-frontend db migrate lint install install-hooks generate-client stop restart verify-promotion check-portability
 
 # Start everything
 dev:
@@ -66,3 +66,9 @@ hash-password:
 # See docs/promoting-a-flatpack.md.
 verify-promotion:
 	cd backend && DEBUG=true PYTHONPATH=. python scripts/verify_promotion.py ../reference/original-flatpack.html
+
+# Mechanically assert the deployment portability contract (Dockerfiles read
+# $PORT, run non-root, declare healthchecks; config is env-driven; migrations
+# run on start). See DEPLOYMENT.md "Portability contract".
+check-portability:
+	python backend/scripts/check_portability.py
