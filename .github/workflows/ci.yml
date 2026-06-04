@@ -30,6 +30,8 @@ jobs:
         run: ruff check app/ tests/
       - name: Tests
         run: PYTHONPATH=. pytest -q
+      - name: Portability contract
+        run: python scripts/check_portability.py
       - name: Verify Flatpack promotion (only if a reference Flatpack exists)
         run: |
           if [ -f ../reference/original-flatpack.html ]; then

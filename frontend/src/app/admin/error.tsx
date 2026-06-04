@@ -1,5 +1,7 @@
 "use client";
 
+import { reportError } from "@/lib/observability";
+
 export default function AdminError({
   error,
   reset,
@@ -7,7 +9,7 @@ export default function AdminError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  console.error("Admin error:", error);
+  reportError(error, { boundary: "admin", digest: error.digest });
 
   return (
     <div className="flex flex-col items-center justify-center py-24">
