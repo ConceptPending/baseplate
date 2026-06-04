@@ -1,5 +1,13 @@
+import type { components } from "./api-types";
 import { getCSRFToken } from "./csrf";
 import type { Item, ItemCreate, ItemUpdate, LoginResponse, User } from "./types";
+
+export type Invoice = components["schemas"]["InvoiceResponse"];
+export type InvoiceCreate = components["schemas"]["InvoiceCreate"];
+export type InvoiceSummary = {
+  count: number;
+  by_currency: { currency: string; total: number }[];
+};
 
 const BASE = "";
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -80,4 +88,23 @@ export async function deleteItem(id: string) {
 // Items (Public)
 export async function getPublicItems() {
   return fetchAPI<Item[]>("/api/public/items");
+}
+
+// Invoices (Admin) — promoted from the Supplier invoice cleaner Flatpack.
+export async function listInvoices() {
+  return fetchAPI<Invoice[]>("/api/admin/invoices", { credentials: "include" });
+}
+
+export async function createInvoice(data: InvoiceCreate) {
+  return fetchAPI<Invoice>("/api/admin/invoices", {
+    method: "POST",
+    body: JSON.stringify(data),
+    credentials: "include",
+  });
+}
+
+export async function getInvoiceSummary() {
+  return fetchAPI<InvoiceSummary>("/api/admin/invoices/summary", {
+    credentials: "include",
+  });
 }

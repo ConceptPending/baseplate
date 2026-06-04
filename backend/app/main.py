@@ -9,7 +9,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.responses import JSONResponse
 
-from app.api import auth, items, public
+from app.api import auth, invoices, items, public
 from app.bootstrap import ensure_admin_user
 from app.config import settings
 from app.database import async_session
@@ -117,6 +117,7 @@ async def request_logging(request: Request, call_next):
 # Admin routes
 app.include_router(auth.router)
 app.include_router(items.router)
+app.include_router(invoices.router)
 
 # Public routes
 app.include_router(public.router)

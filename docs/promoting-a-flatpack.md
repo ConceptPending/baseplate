@@ -26,6 +26,15 @@ A Flatpack promotion produces three things:
 See [`case-studies/invoice-cleaner-promotion/`](https://github.com/ConceptPending/flatpack/tree/main/case-studies/invoice-cleaner-promotion)
 in the Flatpack repo for a worked example.
 
+> ✅ **End-to-end verified example.** The `example/invoice-review` branch of
+> this repo is the Supplier-invoice-cleaner Flatpack actually promoted: an
+> `Invoice` model + schema carrying the manifest's validation predicates +
+> the three exports, with the original Flatpack preserved under `reference/`.
+> `make verify-promotion` resolves every MANIFEST-ASSERTED claim against the
+> built app (17 ok, 0 miss). That closes the round-trip: Flatpack's
+> `tools/promote.mjs` produces the plan (golden-tested there), and this side's
+> `verify_promotion.py` proves the built app honours the manifest.
+
 ## The receiving flow
 
 ### 1. Scaffold a Baseplate project

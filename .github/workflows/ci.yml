@@ -30,6 +30,13 @@ jobs:
         run: ruff check app/ tests/
       - name: Tests
         run: PYTHONPATH=. pytest -q
+      - name: Verify Flatpack promotion (only if a reference Flatpack exists)
+        run: |
+          if [ -f ../reference/original-flatpack.html ]; then
+            DEBUG=true PYTHONPATH=. python scripts/verify_promotion.py ../reference/original-flatpack.html
+          else
+            echo "No reference/original-flatpack.html — not a promoted project, skipping."
+          fi
 
   test-frontend:
     name: Frontend — typecheck, lint, tests, build
