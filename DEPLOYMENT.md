@@ -155,6 +155,39 @@ DATABASE_URL=postgresql+asyncpg://${{Postgres.PGUSER}}:${{Postgres.PGPASSWORD}}@
 That tracks the Postgres credentials automatically (if Railway rotates them,
 the backend picks them up on next deploy) while keeping the asyncpg prefix.
 
+## Portability contract & other platforms
+
+Baseplate ships Railway-first but is **not Railway-coupled**. It depends only on
+a small, platform-neutral contract, which CI verifies on every push via
+`backend/scripts/check_portability.py`:
+
+```bash
+make check-portability
+```
+
+The check asserts both Dockerfiles read `$PORT`, run as a non-root user, and
+declare an HTTP `HEALTHCHECK`; that config is env-driven; that Postgres is the
+only required external service; and that migrations run on start. If any item
+regresses, CI fails — so the "runs anywhere that honours the contract" claim
+stays true as the code evolves.
+
+### Per-platform conformance
+
+| Platform | Status | What it needs |
+|---|---|---|
+| **Railway** | ✅ Verified (live demo) | Three services (backend, frontend, Postgres plugin); env vars per the Quick path; `PORT=8001` pinned on the backend (see issue 1 above). |
+| **Render** | ⚠️ Contract-mapped, smoke-test pending | A `render.yaml` blueprint with two Docker web services + a managed Postgres. Render injects `$PORT` (both images honour it). Set the same env vars; compose `DATABASE_URL` with the `+asyncpg` prefix from Render's Postgres fields. Frontend `API_URL` → the backend service's internal URL. |
+| **Fly.io** | ⚠️ Contract-mapped, smoke-test pending | A `fly.toml` per service (`fly launch` from `backend/` and `frontend/`). Fly sets `PORT` via `[env]`/`internal_port`; both images bind it. Attach Fly Postgres and set `DATABASE_URL` (asyncpg prefix). Use Fly private networking (`.internal`) for `API_URL`. |
+| **Google Cloud Run** | ⚠️ Contract-mapped, smoke-test pending | Deploy each Dockerfile as a service (`gcloud run deploy --source`). Cloud Run injects `$PORT` (default 8080 — both images read it, so no change needed). Use Cloud SQL for Postgres; set env vars via `--set-env-vars` / Secret Manager. |
+| **AWS App Runner / ECS Fargate** | ⚠️ Contract-mapped, smoke-test pending | Push both images to ECR; App Runner/ECS sets the port (App Runner defaults 8080 — honoured). RDS Postgres; env vars via the service config / Secrets Manager. Run as the non-root user the images already declare. |
+| **Kubernetes** | ⚠️ Contract-mapped, smoke-test pending | Two Deployments + Services; set `PORT` via container env; wire `livenessProbe`/`readinessProbe` to the healthcheck paths; a managed or in-cluster Postgres; secrets via `Secret` objects. |
+
+"Contract-mapped" means the portability check passes and the platform provides
+everything the contract requires — but no live deployment has been smoke-tested
+there yet. Treat the first deploy as the verification step. **To make one
+first-class**: add a `deploy-<platform>.yml` mirroring `deploy-railway.yml`'s
+`workflow_run` gate, smoke-test it, and move its row to ✅.
+
 ## What's still untested
 
 - Auto-deploy via GitHub Actions. CLI-first deploy works; the CI path is

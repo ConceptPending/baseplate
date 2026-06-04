@@ -460,6 +460,10 @@ App Runner / ECS Fargate, and Kubernetes — though only **Railway is
 first-class-verified today**. Treat other platforms as reachable but
 unverified until smoke-tested examples land.
 
+`make check-portability` asserts this contract mechanically (it runs in CI), so
+the claim stays honest as the code changes. See [DEPLOYMENT.md](DEPLOYMENT.md)
+for the per-platform conformance table and exactly what each platform needs.
+
 **To swap platforms**: delete `.github/workflows/deploy-railway.yml`, add a
 `deploy-<platform>.yml` alongside it using the same `workflow_run` trigger
 pattern. Both Dockerfiles are already platform-agnostic; no app-layer change
