@@ -1,5 +1,12 @@
 # Recipe: User-management admin page
 
+> ✅ **Applied & tested on the `example/admin-users` branch** (layered on
+> `example/audit-log`, since the two recipes pair — deactivation preserves the
+> audit trail). Not just prose there: the `is_active` model + migration, the
+> service safety constraints, the routes, the `/admin/users` page, and the
+> safety-constraint tests (`backend/tests/test_users.py`) are applied to the
+> base and green. Diff the branch against `main` to see exactly what it touches.
+
 Lets admins create, list, and deactivate other admin users via the
 admin UI. Pairs naturally with the [SSO recipe](sso-oidc.md) — once
 people can log in via Google Workspace, you'll quickly want a place

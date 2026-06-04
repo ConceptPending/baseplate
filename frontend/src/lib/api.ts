@@ -4,6 +4,7 @@ import { reportError } from "./observability";
 import type { Item, ItemCreate, ItemUpdate, LoginResponse, User } from "./types";
 
 export type AuditLogEntry = components["schemas"]["AuditLogResponse"];
+export type AdminUser = components["schemas"]["UserResponse"];
 
 const BASE = "";
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -102,6 +103,35 @@ export async function getPublicItems() {
 // Audit log (Admin)
 export async function getAuditLog() {
   return fetchAPI<AuditLogEntry[]>("/api/admin/audit-log", {
+    credentials: "include",
+  });
+}
+
+// Users (Admin)
+export async function listUsers() {
+  return fetchAPI<AdminUser[]>("/api/admin/users", { credentials: "include" });
+}
+
+export async function inviteUser(email: string, isAdmin: boolean) {
+  return fetchAPI<AdminUser>("/api/admin/users", {
+    method: "POST",
+    body: JSON.stringify({ email, is_admin: isAdmin }),
+    credentials: "include",
+  });
+}
+
+export async function setUserActive(id: string, isActive: boolean) {
+  return fetchAPI<AdminUser>(`/api/admin/users/${id}/active`, {
+    method: "PATCH",
+    body: JSON.stringify({ is_active: isActive }),
+    credentials: "include",
+  });
+}
+
+export async function setUserAdmin(id: string, isAdmin: boolean) {
+  return fetchAPI<AdminUser>(`/api/admin/users/${id}/admin`, {
+    method: "PATCH",
+    body: JSON.stringify({ is_admin: isAdmin }),
     credentials: "include",
   });
 }

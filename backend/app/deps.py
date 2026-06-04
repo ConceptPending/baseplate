@@ -40,7 +40,8 @@ async def get_current_admin(
 
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    if not user or not user.is_admin:
-        # User was deleted, demoted, or token references a non-existent id.
+    if not user or not user.is_admin or not user.is_active:
+        # User was deleted, demoted, deactivated, or token references a
+        # non-existent id. An inactive user is treated like a deleted one.
         raise HTTPException(status_code=401, detail="Invalid token")
     return user

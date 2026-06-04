@@ -10,7 +10,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy import text
 from starlette.responses import JSONResponse
 
-from app.api import audit_log, auth, items, public
+from app.api import audit_log, auth, items, public, users
 from app.bootstrap import ensure_admin_user
 from app.config import settings
 from app.database import async_session
@@ -134,6 +134,7 @@ async def request_logging(request: Request, call_next):
 app.include_router(auth.router)
 app.include_router(items.router)
 app.include_router(audit_log.router)
+app.include_router(users.router)
 
 # Public routes
 app.include_router(public.router)
