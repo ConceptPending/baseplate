@@ -8,6 +8,7 @@ class UserResponse(BaseModel):
     id: UUID
     email: EmailStr
     is_admin: bool
+    is_active: bool
     created_at: datetime
     updated_at: datetime
 
