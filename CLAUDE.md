@@ -40,6 +40,17 @@ make stop                         # kill dev servers + Docker
 
 `README.md` has a 10-step recipe under "Adding a new domain model". Follow it literally — model → register → migrate → schemas → service → routes → router include → TS type → API client → pages. The existing `Item` slice is the canonical reference.
 
+## Lifecycle entities (state-machine specs)
+
+This branch demonstrates the [`lifecycle-state-machine`](docs/recipes/lifecycle-state-machine.md) recipe. When an entity has a *lifecycle* — a `status` that moves through reviewable steps with rules about who may move it and when — model it as a declarative spec instead of a free-form `status` setter. The `Submission` slice is the reference here.
+
+- The spec lives in `app/statespec/<entity>_spec.py`: states, named transitions (each with permitted **roles** and an optional **guard**), and invariants. Plain data — the single source of truth.
+- The generic engine (`app/statespec/core.py`) is the **only** place a transition happens. The service calls `statespec.apply(SPEC, action, current_state, actor_roles, snapshot)` and persists the result — no `status = new_value` anywhere else.
+- Roles are real and per-user: `User.roles` (a CSV column, vocabulary in `app/roles.py`); `deps.roles_for(user)` returns `user.role_set`. `is_admin` gates the admin area; `roles` gate which transitions an admin may fire. Assign via `PUT /api/admin/users/{id}/roles` (rejects unknown roles and removing the last holder of a role).
+- **System-fired transitions**: an edge whose only role is `roles.SYSTEM` can be fired only by a scheduled job passing `frozenset({SYSTEM})` (see `SubmissionService.expire_stale`, wired in `app/tasks/scheduler.py`), never by a person. `SYSTEM` is in `ALL_ROLES` but not `HUMAN_ROLES`, so the assignment endpoint refuses it.
+- **Verification is the point.** `tests/test_submission_statespec.py` is a Hypothesis `RuleBasedStateMachine` that asserts the spec's invariants hold over random sequences. Register new specs in `SPECS` (`scripts/statespec.py`) so `make spec-check` (CI gate) validates them and `make spec-doc` renders `docs/specs/<entity>-lifecycle.md` (generated; CI fails if stale).
+- Not everything is a state machine. Plain CRUD (the `Item` slice) gets no spec.
+
 ## Gotchas
 
 - **Ports**: backend `:8001`, frontend `:3001` — consistent across `Makefile` dev and both Dockerfiles. Railway injects `$PORT` at runtime, which the apps respect.
@@ -74,6 +85,7 @@ When you see these in the codebase, fix them rather than copy:
 - `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH` env vars seed the **first** admin user on startup via `app/bootstrap.py:ensure_admin_user` (idempotent; only runs when no admin exists in the DB). After that, env vars are unused — manage users via the database.
 - JWT cookie carries `sub = str(user.id)` (UUID), not the email. Renaming a user doesn't invalidate sessions.
 - `deps.get_current_admin` returns a `User` model. Routes that only need the gate use `dependencies=[Depends(get_current_admin)]` on the router; routes that need the User object accept it as a parameter (see `auth.me`).
+- **Roles vs. admin.** `is_admin` is the coarse gate (reach the admin area at all); `User.roles` (CSV; vocabulary in `app/roles.py`) is the fine-grained layer — which lifecycle actions an admin may perform. An admin can hold zero roles. The bootstrap admin is seeded with every human role; grant others deliberately via `PUT /api/admin/users/{id}/roles`. See "Lifecycle entities".
 
 ## CSRF protection
 
