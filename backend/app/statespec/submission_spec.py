@@ -41,8 +41,9 @@ SUBMISSION_SPEC = StateSpec(
     name="submission",
     title="Submission moderation lifecycle",
     states=_STATES,
-    # Context contract — what a service snapshot must provide.
-    fields={"status": "str", "age_days": "int"},
+    # Context contract — what a service snapshot must provide. age_days is the
+    # days since created_at (the service computes it as a float).
+    fields={"status": "str", "age_days": "decimal"},
     initial="pending",
     terminal=frozenset({"approved", "rejected", "expired"}),
     transitions=(
