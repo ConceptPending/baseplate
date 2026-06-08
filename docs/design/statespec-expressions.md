@@ -407,3 +407,36 @@ out-of-band mutation — a 500 that alarms is correct. `validate` cannot prove a
 invariant is a true consequence, so this is enforced by convention and
 documented: **any client-visible rule must be a guard, never a standalone
 invariant.**
+
+## 17. Identity & audit layers — notes from the second review
+
+These landed after §16 (the identity layer, then audit), with two clarifications
+worth recording:
+
+- **`docs/specs/<name>.policy.json` is a *committed* baseline, not an *approved*
+  one.** It is a declared, repository-level baseline (version + digest +
+  canonical spec). An agent can still change the spec and the baseline in the
+  same PR, so the digest alone does not mean "approved." It only becomes an
+  approved policy once an **independent approval record** is tied to the exact
+  digest — that belongs to the future approval-authority / GitHub-gate layer,
+  not here.
+- **Label changes currently *are* policy changes.** `canonical()` includes
+  labels/descriptions, so rewording "Batch must contain no unresolved errors"
+  to "All validation errors must be resolved" changes the digest even though
+  the executable expression is identical. That is conservative and defensible
+  (the approved human-facing representation changed), but it means an editorial
+  change invalidates policy identity. If that becomes painful, split into a
+  **semantic/execution digest** (states, transitions, roles, expressions) and a
+  **review/document digest** (adds labels and prose). Not split yet.
+
+**Audit layer (built):** every transition records an append-only
+`LifecycleEvent` in the same transaction as the state change (atomic) —
+who/what/prev-new-state, roles snapshotted as historical facts, the spec
+version+digest, entity version before/after, and structured guard/invariant
+evidence (control id, expression, result, and the *fields the expression read*,
+not the whole entity). The engine primitive is `core.fire()`, which returns
+`(dest, [Evaluation, ...])`; `apply()` is the dest-only wrapper. Denied attempts
+are out of this pass (different transaction semantics — the main txn rolls back
+while a denial record must still commit); the `outcome` field is in the schema
+for when they're added. Worked example: the `flatpack-invoice-review-example`
+repo's `ReviewBatch` (`GET /api/admin/batches/{id}/lifecycle-events`).

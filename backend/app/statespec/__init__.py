@@ -12,11 +12,12 @@ transition, and the guard predicates that must hold. The same artifact is:
   *cannot* drift from the spec without a test noticing.
 
 The engine here is deliberately domain-agnostic: it knows nothing about
-any domain. Domain specs live next to their slice (see `submission_spec`).
+any domain. Domain specs live next to their slice (see `batch_spec`).
 """
 
 from app.statespec.core import (
     Decision,
+    Evaluation,
     ExpressionError,
     GuardRejected,
     IllegalTransition,
@@ -30,11 +31,13 @@ from app.statespec.core import (
     apply,
     can_fire,
     enabled_transitions,
+    fire,
     validate,
 )
 
 __all__ = [
     "Decision",
+    "Evaluation",
     "ExpressionError",
     "GuardRejected",
     "IllegalTransition",
@@ -48,5 +51,6 @@ __all__ = [
     "apply",
     "can_fire",
     "enabled_transitions",
+    "fire",
     "validate",
 ]
