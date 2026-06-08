@@ -17,9 +17,11 @@ any domain. Domain specs live next to their slice (see `submission_spec`).
 
 from app.statespec.core import (
     Decision,
+    ExpressionError,
     GuardRejected,
     IllegalTransition,
     Invariant,
+    InvariantViolation,
     PermissionDenied,
     StateSpec,
     Transition,
@@ -33,9 +35,11 @@ from app.statespec.core import (
 
 __all__ = [
     "Decision",
+    "ExpressionError",
     "GuardRejected",
     "IllegalTransition",
     "Invariant",
+    "InvariantViolation",
     "PermissionDenied",
     "StateSpec",
     "Transition",

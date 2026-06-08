@@ -84,7 +84,7 @@ class SubmissionLifecycleMachine(RuleBasedStateMachine):
         # restating them here (so the test can't drift from the spec).
         snap = self._entity()
         for inv in SUBMISSION_SPEC.invariants:
-            assert inv.predicate(snap), f"invariant {inv.name!r} violated at {snap}"
+            assert inv.condition.evaluate(snap), f"invariant {inv.name!r} violated at {snap}"
 
     @invariant()
     def terminals_are_sinks(self):

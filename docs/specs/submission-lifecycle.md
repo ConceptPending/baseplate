@@ -12,8 +12,8 @@ stateDiagram-v2
     needs_info --> pending: provide_info (reviewer)
     pending --> approved: approve (reviewer)
     pending --> rejected: reject (reviewer)
-    pending --> expired: expire (system) [is_stale]
-    needs_info --> expired: expire (system) [is_stale]
+    pending --> expired: expire (system) [age_days ≥ 30]
+    needs_info --> expired: expire (system) [age_days ≥ 30]
     approved --> [*]
     expired --> [*]
     rejected --> [*]
@@ -37,10 +37,10 @@ stateDiagram-v2
 | **provide_info** — Record that the requested information arrived; back to the queue. | needs_info | pending | reviewer | — |
 | **approve** — Accept and publish the submission. | pending | approved | reviewer | — |
 | **reject** — Decline the submission (final). | pending | rejected | reviewer | — |
-| **expire** — Auto-close a stale submission (scheduled job, not a person). | pending, needs_info | expired | system | is_stale |
+| **expire** — Auto-close a stale submission (scheduled job, not a person). | pending, needs_info | expired | system | age_days ≥ 30 |
 
 ## Invariants
 
-Properties that should hold in every reachable state. The property-based test suite (Hypothesis) checks them after every transition across randomly generated action sequences. They are enforced *transitively* by the guards and transition structure above — the engine does not yet evaluate them as independent runtime checks, so a mutation made outside a transition is not guarded against them:
+Properties that must hold in every reachable state. The engine evaluates them against the proposed post-state on every transition and refuses the transition if any fails; the property-based suite (Hypothesis) also checks them across random action sequences. (A mutation made entirely outside a transition is still beyond the engine's reach — that is the database-constraint domain.)
 
-- **status_declared** — The status is always one of the declared states.
+- **status_declared** (`status ∈ {"pending", "needs_info", "approved", "rejected", "expired"}`) — The status is always one of the declared states.

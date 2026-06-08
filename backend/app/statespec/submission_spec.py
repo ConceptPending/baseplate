@@ -7,38 +7,26 @@ What's deliberately different here:
   person — its only permitted actor is the synthetic `SYSTEM` role. This probes
   the engine's "every edge has a role" assumption (it holds: SYSTEM is just a
   role no human can hold).
-- **An age-based guard** rather than an amount-based one. The guard reads
-  `age_days` from the entity snapshot, which the service derives from
-  `created_at`. Guards stay pure (no clock inside them), exactly as the invoice
-  guard reads `amount`.
+- **An age-based guard** rather than an amount-based one — `age_days ≥ N`,
+  declarative because the service derives `age_days` into the context (no clock
+  inside the guard).
 - **A back-and-forth** (`request_info` ⇄ `provide_info`) and a third terminal
   (`expired`) alongside `approved`/`rejected`.
 
-The engine itself is imported unchanged — this module is pure data.
+Guards and invariants are declarative expressions (app/statespec/expr.py).
 """
 
 from __future__ import annotations
 
-from typing import Mapping
-
 from app.roles import REVIEWER, SYSTEM
 from app.statespec.core import Invariant, StateSpec, Transition
+from app.statespec.expr import field
 
 __all__ = ["SUBMISSION_SPEC", "STALE_AFTER_DAYS"]
 
 # A pending/awaiting-info submission older than this is auto-expired by the
 # scheduled job. The threshold is enforced by a guard, not left to convention.
 STALE_AFTER_DAYS = 30
-
-
-def _is_stale(entity: Mapping[str, object]) -> bool:
-    age = entity.get("age_days", 0)
-    return isinstance(age, (int, float)) and age >= STALE_AFTER_DAYS
-
-
-def _status_declared(e: Mapping[str, object]) -> bool:
-    return e.get("status") in _STATES
-
 
 _STATES = {
     "pending": "Submitted and awaiting moderation.",
@@ -53,9 +41,10 @@ SUBMISSION_SPEC = StateSpec(
     name="submission",
     title="Submission moderation lifecycle",
     states=_STATES,
+    # Context contract — what a service snapshot must provide.
+    fields={"status": "str", "age_days": "int"},
     initial="pending",
     terminal=frozenset({"approved", "rejected", "expired"}),
-    guards={"is_stale": _is_stale},
     transitions=(
         Transition(
             name="request_info",
@@ -91,14 +80,14 @@ SUBMISSION_SPEC = StateSpec(
             dest="expired",
             # System-only: a scheduled job fires this; no human role can.
             roles=frozenset({SYSTEM}),
-            guard="is_stale",
+            guard=field("age_days").ge(STALE_AFTER_DAYS),
             label="Auto-close a stale submission (scheduled job, not a person).",
         ),
     ),
     invariants=(
         Invariant(
             "status_declared",
-            _status_declared,
+            field("status").is_in(tuple(_STATES)),
             "The status is always one of the declared states.",
         ),
     ),
