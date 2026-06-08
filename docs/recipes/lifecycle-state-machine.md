@@ -20,20 +20,25 @@ single guarded transition path.
 
 - **Humans (fit-for-purpose).** `make spec-doc` renders the spec to
   `docs/specs/<entity>-lifecycle.md`: a state diagram, a plain-English
-  "who-may-do-what" table, and the guarantees that always hold. A domain owner,
+  "who-may-do-what" table, and the declared invariants. A domain owner,
   reviewer, or auditor signs off on *that* — without reading Python. It's
-  generated and CI-checked, so it can never drift from the behaviour.
+  generated and CI-checked, so it **can't drift from the declarative spec**.
 - **Machines (correctness).** Every transition goes through one function,
-  `statespec.apply`. A Hypothesis `RuleBasedStateMachine` drives it over
-  thousands of random action/role sequences and asserts the lifecycle's
-  invariants hold after *every* step. The documented workflow and the tested
-  workflow are the same object.
+  `statespec.apply`. At runtime it enforces the guard and the invariants
+  against the proposed post-state; a Hypothesis `RuleBasedStateMachine` also
+  drives it over random action/role sequences. So the application's *canonical
+  transition path* is continuously checked against the declared spec.
 
-That's a concrete, demonstrable control: "the system mechanically enforces the
-documented approval workflow and separation of duties, and proves it on every
-CI run." It maps cleanly onto the access-control / change-management evidence a
-SOC 2 (or similar) reviewer asks for — an executable control, not a screenshot
-of a policy doc.
+That gives you a concrete, inspectable control: the documented workflow and the
+enforced workflow are the same declarative object, and a change to it is visible
+in the rendered doc and a structural diff. **Read the scope honestly, though**
+— this checks that the app applies the declared rule on its transition path. It
+does *not* by itself cover: a service that supplies wrong *facts* (runtime
+context type-checking mitigates, doesn't eliminate, this); direct database
+mutations; concurrency; `Opaque` custom code; audit/evidence of *who did what*
+(a separate concern); or whether the human-approved policy is itself correct.
+It's a strong ingredient for access-control / change-management evidence (SOC 2
+and similar), not a turnkey control on its own.
 
 ## Worked examples
 
@@ -59,7 +64,7 @@ rather than retyping:
 | `app/roles.py` | The role vocabulary; `HUMAN_ROLES` (grantable) vs the full engine set (which may include a synthetic `SYSTEM` actor). |
 | `app/services/<entity>.py` | A thin `transition()` method that calls `apply` and persists. No other lifecycle logic. |
 | `app/api/<entity>.py` | A `POST /{id}/transition` endpoint + `roles_for(user)`; maps engine refusals to HTTP codes. `GET /lifecycle` exposes the spec as data. |
-| `tests/test_<entity>_statespec.py` | Static checks + the Hypothesis state machine (the proof). |
+| `tests/test_<entity>_statespec.py` | Static checks + the Hypothesis conformance machine. |
 | `scripts/statespec.py` | `check` (CI gate) and `render` (regenerate docs). Register new specs in `SPECS`. |
 
 ## Steps
@@ -101,7 +106,10 @@ rather than retyping:
    The grammar is closed at comparison + boolean. A condition that genuinely
    can't be a context field (a live cross-entity lookup) uses a **versioned**
    `opaque("name", 1, "label", fn=...)` escape hatch — flagged "requires
-   technical review" and registered, so its body can't change unseen.
+   technical review" and registered. It is *identified and versioned*, so it's
+   conspicuously excluded from declarative assurance; note the registry does
+   not by itself detect a body swap made without a version bump (binding a
+   source hash to the approved policy is the identity layer's job).
 
 3. **Register + validate.** Add the spec to `SPECS` in `scripts/statespec.py`
    and run `make spec-check` (it passes the role catalogue). It refuses
@@ -126,7 +134,7 @@ rather than retyping:
    `render.to_dict(SPEC)` for the UI / a future viewer. (Declare `/lifecycle`
    before any `/{id}` route so the literal path isn't captured as an id.)
 
-7. **Write the proof.** Copy a `test_<entity>_statespec.py`: assert
+7. **Write the conformance test.** Copy a `test_<entity>_statespec.py`: assert
    `core.validate(SPEC) == []`, then a `RuleBasedStateMachine` whose one
    `@rule` fires a random `(action, roles)` and checks the engine's decision
    against an independently derived expectation, with your invariants as
@@ -173,7 +181,8 @@ endpoint refuses to give it to a user, and only a job calling `apply` with
   `apply` evaluates the spec's invariants against the proposed post-state and
   refuses the transition if any fails (a backstop — invariants are consequences
   of guards, so a violation is a 500, not a client 4xx); and a change to any
-  guard/invariant shows up in the rendered doc and in a structural diff, so a
-  rule can't be redefined unseen. Design details:
+  *declarative* guard/invariant shows up in the rendered doc and in a structural
+  diff, so it can't be redefined unseen (an `Opaque` body is the exception —
+  see the note in step 2). Design details:
   [`docs/design/statespec-expressions.md`](../design/statespec-expressions.md)
   (on the `example/state-machine` branch alongside the engine).
