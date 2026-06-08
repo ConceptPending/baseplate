@@ -64,3 +64,11 @@ if not settings.debug:
         for err in errors:
             logger.critical("startup_validation_failed", error=err)
         sys.exit(1)
+elif settings.jwt_secret in _INSECURE_JWT_SECRETS or len(settings.jwt_secret.encode()) < 32:
+    # DEBUG skips the hard checks, but a DEBUG=true deploy with the default
+    # secret is forgeable — warn loudly so it can't slip into production unseen.
+    print(
+        "[baseplate] WARNING: insecure JWT_SECRET with DEBUG=true. Session tokens "
+        "are forgeable — never run this configuration outside local development.",
+        file=sys.stderr,
+    )
