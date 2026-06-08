@@ -64,6 +64,16 @@ Scheduled IMAP poll turns an inbox into a submission queue. Composes
 with the public-submission recipe — same queue UI, same status workflow,
 just a different intake mechanism. Idempotent via `Message-ID`.
 
+### [Lifecycle entity with a verified state machine](lifecycle-state-machine.md)
+Model an entity's lifecycle (received → reviewed → approved/rejected) as a
+declarative spec with a generic enforcement engine. The spec renders to a
+human-readable diagram + table for sign-off and is proven against its
+invariants by a Hypothesis property suite — an executable approval-workflow /
+separation-of-duties control (SOC 2-friendly). Worked examples: the
+`example/state-machine` branch (submission moderation, incl. a system-fired
+auto-expiry) and the standalone `flatpack-invoice-review-example` repo
+(batch review).
+
 ## Suggested future recipes (not yet written)
 
 These came up in scoping but haven't landed yet. Open a PR if you
@@ -74,8 +84,6 @@ write one. Grouped by the audience that's most likely to want them.
 - **Document upload model** — file storage + metadata + admin viewer (S3/R2-compatible)
 - **Scheduled importer** — APScheduler job that fetches external data
   and stores it with a `last_synced_at` column
-- **Status workflow with allowed transitions** — explicit state machine
-  on a model (composes with `audit-log.md`)
 - **Soft delete + archive** — `deleted_at` column, query helpers, admin
   "restore" UI
 - **Read-only public page backed by admin CRUD** — `(public)/`-route-group
