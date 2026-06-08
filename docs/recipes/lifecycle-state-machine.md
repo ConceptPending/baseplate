@@ -69,31 +69,45 @@ rather than retyping:
    are domain-free.
 
 2. **Write the spec.** Create `app/statespec/<entity>_spec.py`. Declare your
-   `states`, the `initial` state, the `terminal` (sink) states, and each
-   `Transition(name, sources, dest, roles, guard?, label)`. Put guard
-   predicates and `Invariant`s next to it — pure functions over an entity
-   snapshot the service supplies (so guards never reach for a clock or the DB).
+   `states`, a typed `fields` schema (the context contract — what the service
+   snapshot must provide), the `initial` and `terminal` (sink) states, and each
+   `Transition(name, sources, dest, roles, guard?, label)`. Guards and
+   invariants are **declarative expressions** (`app/statespec/expr.py`), not
+   Python functions: `field(...).eq/ne/lt/le/gt/ge/is_in(...)` combined with
+   `all_/any_/not_`. Because they're pure data, the rendered doc shows the real
+   condition and a change to it is diff-visible.
 
    ```python
    BATCH_SPEC = StateSpec(
        name="batch", title="Batch review lifecycle",
        states={"pending": "...", "approved": "...", "rejected": "..."},
+       fields={"status": "str", "error_count": "int"},   # the context contract
        initial="pending", terminal=frozenset({"approved", "rejected"}),
-       guards={"no_unresolved_errors": lambda e: int(e.get("error_count", 0)) == 0},
        transitions=(
            Transition("approve", ("pending",), "approved",
-                      roles=frozenset({APPROVER}), guard="no_unresolved_errors"),
+                      roles=frozenset({APPROVER}),
+                      guard=field("error_count").eq(0)),
            Transition("reject", ("pending",), "rejected",
                       roles=frozenset({REVIEWER, APPROVER})),
        ),
-       invariants=(...),
+       invariants=(
+           Invariant("approved_implies_clean",
+                     any_(field("status").ne("approved"),
+                          field("error_count").eq(0)), "..."),
+       ),
    )
    ```
 
+   The grammar is closed at comparison + boolean. A condition that genuinely
+   can't be a context field (a live cross-entity lookup) uses a **versioned**
+   `opaque("name", 1, "label", fn=...)` escape hatch — flagged "requires
+   technical review" and registered, so its body can't change unseen.
+
 3. **Register + validate.** Add the spec to `SPECS` in `scripts/statespec.py`
-   and run `make spec-check`. It refuses unreachable states, traps (a
-   non-terminal state that can't reach a terminal), dead edges (no roles), and
-   dangling guard references — so a malformed lifecycle can't reach production.
+   and run `make spec-check` (it passes the role catalogue). It refuses
+   unreachable states, traps, dead edges, duplicate/un-catalogued roles, and
+   **type-mismatched or unknown-field expressions** — so a malformed lifecycle
+   (or a guard comparing a `uuid` to a `str`) can't reach production.
 
 4. **Add the columns + migration.** A `status: Mapped[str]` defaulting to the
    spec's initial state (plain `String`, **not** a DB enum — the spec is the
@@ -155,3 +169,11 @@ endpoint refuses to give it to a user, and only a job calling `apply` with
 - **Note on the proof.** Hypothesis proves the code *obeys the spec*; it does
   not prove the spec is the right business rule. The generated doc is how a
   human verifies intent — machine checks conformance, human checks correctness.
+- **What the expression layer buys you.** Because conditions are pure data:
+  `apply` evaluates the spec's invariants against the proposed post-state and
+  refuses the transition if any fails (a backstop — invariants are consequences
+  of guards, so a violation is a 500, not a client 4xx); and a change to any
+  guard/invariant shows up in the rendered doc and in a structural diff, so a
+  rule can't be redefined unseen. Design details:
+  [`docs/design/statespec-expressions.md`](../design/statespec-expressions.md)
+  (on the `example/state-machine` branch alongside the engine).
