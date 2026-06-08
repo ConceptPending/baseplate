@@ -79,8 +79,12 @@ class SubmissionLifecycleMachine(RuleBasedStateMachine):
                 core.apply(SUBMISSION_SPEC, action, self.state, roles, self._entity())
 
     @invariant()
-    def status_is_declared(self):
-        assert self.state in SUBMISSION_SPEC.states
+    def spec_invariants_hold(self):
+        # Generic: run every invariant predicate the spec declares, rather than
+        # restating them here (so the test can't drift from the spec).
+        snap = self._entity()
+        for inv in SUBMISSION_SPEC.invariants:
+            assert inv.predicate(snap), f"invariant {inv.name!r} violated at {snap}"
 
     @invariant()
     def terminals_are_sinks(self):

@@ -39,8 +39,8 @@ stateDiagram-v2
 | **reject** — Decline the submission (final). | pending | rejected | reviewer | — |
 | **expire** — Auto-close a stale submission (scheduled job, not a person). | pending, needs_info | expired | system | is_stale |
 
-## Guarantees that always hold
+## Invariants
 
-These invariants are checked after *every* transition by the property-based test suite (Hypothesis), across randomly generated sequences of actions:
+Properties that should hold in every reachable state. The property-based test suite (Hypothesis) checks them after every transition across randomly generated action sequences. They are enforced *transitively* by the guards and transition structure above — the engine does not yet evaluate them as independent runtime checks, so a mutation made outside a transition is not guarded against them:
 
 - **status_declared** — The status is always one of the declared states.
