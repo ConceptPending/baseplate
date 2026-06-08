@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.19",
-    "next": "16.2.6",
-    "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "next": "16.2.7",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -23,11 +23,11 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.7.0",
     "eslint": "^9",
-    "eslint-config-next": "16.2.6",
-    "happy-dom": "^20.9.0",
+    "eslint-config-next": "16.2.7",
+    "happy-dom": "^20.10.2",
     "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.8"
   }
 }
