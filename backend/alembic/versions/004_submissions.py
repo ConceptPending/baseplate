@@ -33,10 +33,12 @@ def upgrade() -> None:
             "status", sa.String(32), nullable=False, server_default="pending"
         ),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+            "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(),
+            nullable=False,
         ),
     )
     op.create_index("ix_submissions_status", "submissions", ["status"])

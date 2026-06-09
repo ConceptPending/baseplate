@@ -27,10 +27,12 @@ def upgrade() -> None:
         sa.Column("description", sa.Text, nullable=True),
         sa.Column("is_active", sa.Boolean, nullable=False, server_default="true"),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+            "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(),
+            nullable=False,
         ),
     )
 
