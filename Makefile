@@ -1,12 +1,18 @@
-.PHONY: dev dev-backend dev-frontend db migrate lint install install-hooks generate-client stop restart verify-promotion check-portability
+.PHONY: dev dev-backend dev-frontend db migrate lint install venv install-hooks generate-client stop restart verify-promotion check-portability
 
-# Prefer the backend virtualenv if it exists, else fall back to whatever
-# `python` is on PATH (e.g. an already-activated venv). Tools are invoked as
-# `$(PY) -m <tool>` so they run whether or not the venv is on your PATH — no
-# more "pytest: command not found" / "python: command not found" if you forgot
-# to activate. $(abspath ...) keeps the path valid after a `cd backend`.
-VENV_PY := $(abspath backend/.venv/bin/python)
-PY := $(if $(wildcard $(VENV_PY)),$(VENV_PY),python)
+# One canonical interpreter for every target. PY resolves to the backend venv if
+# it exists, else the bootstrap Python ($(PYTHON)). $(abspath ...) keeps the path
+# valid after a `cd backend`. Tools run as `$(PY) -m <tool>` so they work whether
+# or not the venv is on your PATH, and avoid PATH ambiguity with a global
+# executable from a different interpreter. Override either on the command line:
+#   make test-backend PY=/path/to/python      make install PYTHON=python3.12
+PYTHON ?= python3
+VENV := backend/.venv
+VENV_PY := $(abspath $(VENV)/bin/python)
+ifeq ($(OS),Windows_NT)
+VENV_PY := $(abspath $(VENV)/Scripts/python.exe)
+endif
+PY := $(if $(wildcard $(VENV_PY)),$(VENV_PY),$(PYTHON))
 
 # Start everything
 dev:
@@ -21,9 +27,22 @@ dev-backend:
 dev-frontend:
 	cd frontend && npm run dev -- --port 3001
 
-install:
-	cd backend && $(PY) -m pip install -e ".[dev]"
+# Deterministic from a clean checkout: create backend/.venv if absent, then
+# install backend deps (into that venv) + frontend deps. Uses $(VENV_PY)
+# directly — not $(PY), which resolved before the venv existed — so a first-run
+# install populates the freshly-created venv rather than an arbitrary
+# interpreter. No more PEP 668 "externally-managed-environment" surprises.
+install: venv
+	cd backend && $(VENV_PY) -m pip install -e ".[dev]"
 	cd frontend && npm install
+
+# Create the backend virtualenv (idempotent) and upgrade its packaging tools.
+venv:
+	@command -v $(PYTHON) >/dev/null 2>&1 || { \
+		echo "error: '$(PYTHON)' not found — install Python 3 or run 'make install PYTHON=/path/to/python3'"; \
+		exit 1; }
+	@test -x "$(VENV_PY)" || $(PYTHON) -m venv "$(VENV)"
+	@"$(VENV_PY)" -m pip install --upgrade pip
 
 install-hooks:
 	pre-commit install
