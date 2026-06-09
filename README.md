@@ -119,7 +119,7 @@ When (if) you need it, see [docs/growth-paths/multi-tenant.md](docs/growth-paths
 cp .env.example backend/.env
 cp .env.example frontend/.env.local  # only the API_URL line
 
-make install         # pip install backend deps + npm install frontend deps
+make install         # create backend/.venv, install backend + frontend deps
 make db              # start Postgres 16 via Docker on port 5433
 make migrate         # run Alembic migrations
 make hash-password   # generate a bcrypt hash, paste into backend/.env as ADMIN_PASSWORD_HASH
