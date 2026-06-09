@@ -29,9 +29,10 @@ The control plane consumes **standard policy artifacts** (see
 the customer's models or run their code.
 
 **Repository → control plane** (per change / per deploy):
-repository identity · `spec_id` · `spec_version` · `digest` · `control_id`s ·
-the **semantic diff from the currently-approved digest** · commit SHA ·
-test/check results · optional preview URL · (eventually) build/container digest.
+repository identity · `spec_id` · `spec_version` · `semantic_digest` ·
+`presentation_digest` · `control_id`s · the **semantic diff from the
+currently-approved digest** · commit SHA · test/check results · optional preview
+URL · (eventually) build/container digest.
 
 **Control plane → repository / GitHub:**
 control→owner mapping · required approvers · approval status · approval evidence ·
@@ -44,8 +45,8 @@ Policy                # the continuing governed policy (not one version)
   organisation, repository, spec_id, display_name
 
 PolicyRevision        # immutable once created
-  policy_id, spec_version, spec_digest, canonical_spec, commit_sha,
-  created_at, proposed_by
+  policy_id, spec_version, semantic_digest, presentation_digest, canonical_spec,
+  commit_sha, created_at, proposed_by   # approval binds to semantic_digest
 
 ControlOwner          # control-specific ownership is the differentiator
   policy_id, control_id, owner_user_or_group, required_approvals,
@@ -63,17 +64,21 @@ DeploymentAuthorization   # what the production gate evaluates
 ## Approval is *calculated from the semantic diff*
 
 A change touching `INV-CLEAN-BATCH` + `INV-MAKER-CHECKER` resolves the owners of
-*those* controls and computes the requirement. A pure wording change (digest
-moves, no control behaviour) needs only the general policy owner. A change to
-finance authority / data retention / sanctions handling can require separate
-Finance, Privacy, and Financial-Crime approvals. That control-scoped routing —
+*those* controls and computes the requirement. A pure wording change
+(`presentation_digest` moves, `semantic_digest` stable) needs only the general
+policy owner — and that's now a mechanical test (`identity.change_kind` returns
+`presentation`), not a read of the diff. A change to finance authority / data
+retention / sanctions handling can require separate Finance, Privacy, and
+Financial-Crime approvals. That control-scoped routing —
 driven by the `control_id`s in the diff — is what makes this more than a generic
 "someone must approve production" button.
 
 ## Exact approval semantics
 
-An approval applies to `spec_digest + commit_sha + target_environment`
-(eventually `+ built_artifact_digest`). Two viable models:
+An approval applies to `semantic_digest + commit_sha + target_environment`
+(eventually `+ built_artifact_digest`). Binding to the *semantic* digest is what
+lets a later copy-edit ship without re-approval; a `presentation_digest`-only
+move is recorded and acked, not re-approved. Two viable models:
 
 - **Strict artifact approval** — any commit change invalidates approvals.
   Simplest/strongest; forces reapproval of harmless implementation fixes.
@@ -104,7 +109,7 @@ later** (that's why `PolicyRevision` carries both digest and commit, and
 ## First vertical slice (enough to test the premise)
 
 1. Install the GitHub App. 2. Detect a StateSpec change (compare committed
-`.policy.json` digest to the approved one). 3. Render the semantic diff. 4.
+`.policy.json` `semantic_digest` to the approved one). 3. Render the semantic diff. 4.
 Determine the required owner(s) from the affected controls. 5. Collect an
 approval in a thin web page. 6. Publish a GitHub check. 7. Permit/refuse
 production elevation. 8. Retain the evidence record.
@@ -122,7 +127,7 @@ multi-stage enterprise approval orchestration · an internal application catalog
 | Define policy as a spec | Map controls → owners |
 | Enforce it at runtime | Require + collect approvals |
 | Test it (Hypothesis) | Compute requirements from the diff |
-| Emit version + digest | Record approval tied to a digest |
+| Emit version + semantic/presentation digests | Record approval tied to the semantic digest |
 | Append-only event evidence | Authorise production elevation |
 | Render it for a domain owner | GitHub check + elevation gate |
 

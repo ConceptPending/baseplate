@@ -10,8 +10,10 @@ lifecycle. This script is its CI gate and its documentation generator:
 
 `check` is fast and import-light enough to run in CI alongside the tests;
 `render` keeps the human-readable diagram + the committed policy baseline
-(`.policy.json`, version + digest + canonical spec) in sync with the code;
-`diff` shows what a change did to the policy (the seam a review renders).
+(`.policy.json`, version + semantic/presentation digests + canonical spec) in
+sync with the code; `diff` shows what a change did to the policy — and whether
+it touched behaviour (approval-invalidating) or only wording (the seam a review
+renders).
 
 To register a new spec, add it to `SPECS` below.
 """
@@ -64,8 +66,9 @@ def cmd_render() -> int:
     for spec in SPECS:
         md = DOCS_DIR / f"{spec.name}-lifecycle.md"
         md.write_text(render.to_markdown_doc(spec), encoding="utf-8")
-        # The committed policy baseline: version + digest + canonical spec.
-        # A diff against this is "what this change did to the policy."
+        # The committed policy baseline: version + semantic/presentation digests
+        # + canonical spec. A diff against this is "what this change did to the
+        # policy."
         pj = DOCS_DIR / f"{spec.name}.policy.json"
         pj.write_text(
             json.dumps(identity.policy_record(spec), indent=2, sort_keys=True) + "\n",
@@ -85,16 +88,30 @@ def cmd_diff(name: str) -> int:
         print(f"no committed baseline at {baseline.relative_to(ROOT)} — run render", file=sys.stderr)
         return 2
     old = json.loads(baseline.read_text())
+    if old.get("schema_version") != identity.POLICY_ARTIFACT_SCHEMA:
+        print(f"baseline is artifact schema v{old.get('schema_version')}, engine emits "
+              f"v{identity.POLICY_ARTIFACT_SCHEMA} — run render", file=sys.stderr)
+        return 2
     new = identity.policy_record(spec)
-    if old["digest"] == new["digest"]:
-        print(f"{name}: no policy change (digest {new['digest'][:12]}…)")
+    kind = identity.change_kind(old, new)
+    if kind == "none":
+        print(f"{name}: no policy change (semantic {new['semantic_digest'][:12]}…)")
         return 0
-    print(f"{name}: POLICY CHANGED  v{old['spec_version']} ({old['digest'][:12]}…) "
-          f"→ v{new['spec_version']} ({new['digest'][:12]}…)")
-    for line in identity.diff(old["spec"], new["spec"]):
+    lines = identity.diff(old["spec"], new["spec"])
+    if kind == "presentation":
+        # Wording moved, behaviour didn't: non-invalidating to a behavioural
+        # approval (the control plane routes this to the general policy owner).
+        print(f"{name}: WORDING CHANGED (presentation only — non-invalidating)  "
+              f"{old['presentation_digest'][:12]}… → {new['presentation_digest'][:12]}…")
+        for line in lines:
+            print(f"    {line}")
+        return 0
+    print(f"{name}: POLICY CHANGED  v{old['spec_version']} ({old['semantic_digest'][:12]}…) "
+          f"→ v{new['spec_version']} ({new['semantic_digest'][:12]}…)")
+    for line in lines:
         print(f"    {line}")
     if old["spec_version"] == new["spec_version"]:
-        print("    ⚠ digest changed but version did not — bump StateSpec.version")
+        print("    ⚠ semantic digest changed but version did not — bump StateSpec.version")
     return 0
 
 

@@ -43,7 +43,10 @@ class LifecycleSpecResponse(BaseModel):
     name: str
     title: str
     version: int
-    digest: str
+    # Behavioural identity (what approval binds to) and wording identity
+    # (tracked, non-invalidating). See docs/design/policy-artifact-contract.md.
+    semantic_digest: str
+    presentation_digest: str
     initial: str
     terminal: list[str]
     states: list[StateInfo]

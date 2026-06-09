@@ -278,6 +278,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** FieldInfo */
+        FieldInfo: {
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -289,6 +296,12 @@ export interface components {
             name: string;
             /** Label */
             label: string;
+            /** Text */
+            text: string;
+            /** Condition */
+            condition: {
+                [key: string]: unknown;
+            };
         };
         /** ItemCreate */
         ItemCreate: {
@@ -336,12 +349,20 @@ export interface components {
             name: string;
             /** Title */
             title: string;
+            /** Version */
+            version: number;
+            /** Semantic Digest */
+            semantic_digest: string;
+            /** Presentation Digest */
+            presentation_digest: string;
             /** Initial */
             initial: string;
             /** Terminal */
             terminal: string[];
             /** States */
             states: components["schemas"]["StateInfo"][];
+            /** Fields */
+            fields: components["schemas"]["FieldInfo"][];
             /** Transitions */
             transitions: components["schemas"]["TransitionInfo"][];
             /** Invariants */
@@ -440,7 +461,11 @@ export interface components {
             /** Roles */
             roles: string[];
             /** Guard */
-            guard: string | null;
+            guard: {
+                [key: string]: unknown;
+            } | null;
+            /** Guard Text */
+            guard_text: string | null;
         };
         /** UserResponse */
         UserResponse: {

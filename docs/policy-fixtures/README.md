@@ -6,7 +6,8 @@ application. See [`../design/policy-artifact-contract.md`](../design/policy-arti
 
 - **`submission.baseline.policy.json`** — a real policy artifact (the
   `submission` lifecycle): the versioned envelope (`schema_version`,
-  `spec_version`, `digest`) around the canonical spec.
+  `spec_version`, `semantic_digest`, `presentation_digest`) around the canonical
+  spec.
 - **`expected-diffs.json`** — a corpus of `scenario → semantic-diff lines`: what
   `identity.diff(baseline, mutated)` produces for representative changes (widen a
   guard threshold, add a role, add an invariant). This is the human-renderable

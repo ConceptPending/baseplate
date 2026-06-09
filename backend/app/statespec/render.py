@@ -51,9 +51,11 @@ def to_dict(spec: StateSpec) -> dict:
     return {
         "name": spec.name,
         "title": spec.title,
-        # Policy identity — which exact policy this is.
+        # Policy identity — which exact policy this is. Two digests: behaviour
+        # (what approval binds to) and wording (tracked, non-invalidating).
         "version": spec.version,
-        "digest": _identity.digest(spec),
+        "semantic_digest": _identity.semantic_digest(spec),
+        "presentation_digest": _identity.presentation_digest(spec),
         "initial": spec.initial,
         "terminal": sorted(spec.terminal),
         "states": [{"id": s, "description": d} for s, d in spec.states.items()],

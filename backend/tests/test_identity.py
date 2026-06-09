@@ -21,13 +21,14 @@ def _spec(*, version=1, guard=None, roles=("r",), label="", control_id=None,
 
 
 def test_digest_deterministic():
-    assert identity.digest(SUBMISSION_SPEC) == identity.digest(SUBMISSION_SPEC)
+    assert identity.semantic_digest(SUBMISSION_SPEC) == identity.semantic_digest(SUBMISSION_SPEC)
+    assert identity.presentation_digest(SUBMISSION_SPEC) == identity.presentation_digest(SUBMISSION_SPEC)
 
 
 def test_digest_changes_on_guard_threshold():
     a = _spec(guard=field("n").le(0))
     b = _spec(guard=field("n").le(5))
-    assert identity.digest(a) != identity.digest(b)
+    assert identity.semantic_digest(a) != identity.semantic_digest(b)
     # ...and the diff names it
     lines = identity.diff(identity.canonical(a), identity.canonical(b))
     assert any("guard" in line and "n ≤ 0" in line and "n ≤ 5" in line for line in lines)
@@ -35,8 +36,8 @@ def test_digest_changes_on_guard_threshold():
 
 def test_digest_changes_on_roles_and_version():
     base = _spec(roles=("r",))
-    assert identity.digest(base) != identity.digest(_spec(roles=("r", "s")))
-    assert identity.digest(base) != identity.digest(_spec(version=2))
+    assert identity.semantic_digest(base) != identity.semantic_digest(_spec(roles=("r", "s")))
+    assert identity.semantic_digest(base) != identity.semantic_digest(_spec(version=2))
     lines = identity.diff(identity.canonical(base), identity.canonical(_spec(version=2)))
     assert any("version: 1 → 2" in line for line in lines)
 
@@ -48,6 +49,34 @@ def test_control_id_is_stable_across_label_change():
     assert ca["transitions"][0]["id"] == "GO-1"   # id is the control_id, not the name
     lines = identity.diff(ca, cb)
     assert lines == ["transition GO-1: label changed"]   # identity stable, label diffed
+
+
+def test_label_reword_moves_presentation_not_semantic():
+    """The whole point of the split: a copy-edit changes the wording identity
+    but not the behavioural one, so a behavioural approval survives it."""
+    a = _spec(control_id="GO-1", label="old wording")
+    b = _spec(control_id="GO-1", label="new wording")
+    assert identity.semantic_digest(a) == identity.semantic_digest(b)      # behaviour untouched
+    assert identity.presentation_digest(a) != identity.presentation_digest(b)  # wording moved
+    assert identity.change_kind(identity.policy_record(a), identity.policy_record(b)) == "presentation"
+
+
+def test_state_description_is_presentation_only():
+    a = _spec(states=("a", "b"))
+    b = StateSpec(
+        name="t", title="t",
+        states={"a": "now described", "b": "and this"},
+        fields={"n": "int"}, initial="a", terminal=frozenset({"b"}),
+        transitions=a.transitions, invariants=a.invariants, version=1,
+    )
+    assert identity.semantic_digest(a) == identity.semantic_digest(b)
+    assert identity.presentation_digest(a) != identity.presentation_digest(b)
+
+
+def test_guard_change_is_semantic():
+    a = _spec(guard=field("n").le(0))
+    b = _spec(guard=field("n").le(5))
+    assert identity.change_kind(identity.policy_record(a), identity.policy_record(b)) == "semantic"
 
 
 def test_opaque_source_is_hashed_into_identity():

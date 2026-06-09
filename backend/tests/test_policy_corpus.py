@@ -63,8 +63,8 @@ def test_semantic_diff_corpus_is_stable():
     for name, (mutated, expected) in _scenarios().items():
         got = identity.diff(base, identity.canonical(mutated))
         assert got == expected, f"{name}: {got}"
-        # the digest must move for every behavioural change
-        assert identity.digest(SUBMISSION_SPEC) != identity.digest(mutated), name
+        # the semantic digest must move for every behavioural change
+        assert identity.semantic_digest(SUBMISSION_SPEC) != identity.semantic_digest(mutated), name
 
 
 def test_committed_fixtures_match():

@@ -67,8 +67,9 @@ class StateSpec:
     terminal: frozenset[str]
     transitions: tuple[Transition, ...]
     invariants: tuple[Invariant, ...] = ()
-    # Author-asserted policy version. Bump when the canonical digest changes;
-    # the (version, digest) pair is the policy's identity. See statespec.identity.
+    # Author-asserted policy version. Bump when the *semantic* digest changes;
+    # the (version, semantic_digest) pair is the policy's behavioural identity. A
+    # wording-only edit moves presentation_digest, not this. See statespec.identity.
     version: int = 1
 
     def transition(self, action: str) -> Transition | None:

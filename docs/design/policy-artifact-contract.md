@@ -9,18 +9,19 @@ defines it so that contract can be relied on across repos and over time.
 
 It is a **committed / declared baseline** — the policy the repository currently
 declares. It is **not** an *approved* policy. Approval is an independent record
-(who authorised which digest, when) that lives in the control plane, never in
-the repository. A repo can change the spec and its `.policy.json` in one commit;
+(who authorised which `semantic_digest`, when) that lives in the control plane,
+never in the repository. A repo can change the spec and its `.policy.json` in one commit;
 that makes it the *candidate* policy, not the *authorised* one.
 
-## Shape (schema_version 1)
+## Shape (schema_version 2)
 
 ```jsonc
 {
-  "schema_version": 1,          // version of THIS envelope format (not the policy)
-  "spec_version": 1,            // the author-asserted policy version
-  "digest": "006c626f9058…",    // sha256 over `spec` (the content identity)
-  "spec": {                     // the canonical, content-only spec
+  "schema_version": 2,                  // version of THIS envelope format (not the policy)
+  "spec_version": 1,                    // the author-asserted policy version
+  "semantic_digest": "c90feaf9c431…",   // sha256 over executable behaviour — what approval binds to
+  "presentation_digest": "a5765188d595…", // sha256 over wording — tracked, non-invalidating
+  "spec": {                             // the canonical, content-only spec
     "name": "submission",
     "version": 1,
     "states": { "pending": "…", "approved": "…", … },
@@ -50,11 +51,17 @@ that makes it the *candidate* policy, not the *authorised* one.
 
 ## Guarantees the contract makes
 
-- **`digest` is deterministic and content-only.** It is `sha256` over a
-  canonical serialisation of `spec` (sorted keys, stable arrays, normalised
-  `Decimal`). The same policy always produces the same digest; any change to
-  states, transitions, roles, guard/invariant expressions, **labels**, or an
-  **opaque body** changes it.
+- **Two digests, both deterministic and content-only.** Each is `sha256` over a
+  canonical serialisation (sorted keys, stable arrays, normalised `Decimal`).
+  `semantic_digest` covers **executable behaviour** — states, transitions,
+  roles, guard/invariant expressions, and **opaque-body** hashes; it is what
+  approval binds to, and bumping `spec_version` is keyed to it. `presentation_digest`
+  covers the **human-facing wording** — title, state descriptions, and
+  transition/invariant labels. A copy-edit moves `presentation_digest` only, so
+  a behavioural approval survives a reword; a behavioural change moves
+  `semantic_digest` (and almost always both). Splitting them is what makes
+  "wording vs behaviour" a mechanical check (`identity.change_kind`) instead of
+  a human judgement on every diff.
 - **Conditions are data, not code.** `guard`/`condition` are expression trees
   (compare + boolean), so a consumer can render, diff, and reason about them
   without executing the application. The grammar is closed (see
@@ -80,15 +87,21 @@ that makes it the *candidate* policy, not the *authorised* one.
 - `schema_version` versions the **envelope/format**. Bump it only when this
   shape changes; a consumer keys its parser off it.
 - `spec_version` is the **policy's** author-asserted version. Bump it when the
-  digest changes. `statespec.py diff <name>` warns if the digest changed but the
-  version did not.
+  **`semantic_digest`** changes. `statespec.py diff <name>` warns if the
+  semantic digest changed but the version did not; a wording-only change does
+  not require a bump.
 - The two are independent: a format migration doesn't touch policy versions, and
   a policy change doesn't touch the format version.
 
-## Note on labels
+## Note on labels (the semantic/presentation split)
 
-`spec` includes labels/descriptions, so an editorial reword changes the digest.
-That is deliberate (the approved human-facing wording changed). If that becomes
-painful, the design allows a future split into a **semantic/execution digest**
-(states, transitions, roles, expressions) and a **document digest** (adds
-prose). Not split yet — documented in `statespec-expressions.md` §17.
+`spec` still includes labels/descriptions in full — a reword is never lost. But
+identity is split: a reword moves `presentation_digest` only, leaving
+`semantic_digest` (the digest approval binds to) untouched. So an editorial
+change is **non-invalidating by default** — `diff` still names it ("transition
+X: label changed") and a consumer routes it to the general policy owner for a
+lightweight ack, rather than re-triggering control-owner approval. This was a
+deliberate pre-v1 split, made while there were zero live approval bindings to
+migrate; doing it after the control plane accumulated approvals would have been
+a breaking re-binding. Mechanically: compare the two records with
+`identity.change_kind` → `semantic` | `presentation` | `none`.

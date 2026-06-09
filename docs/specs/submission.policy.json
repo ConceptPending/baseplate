@@ -1,6 +1,7 @@
 {
-  "digest": "006c626f9058337354dda236d2ffce52974303e47def195f0edf199f4f451c5f",
-  "schema_version": 1,
+  "presentation_digest": "a5765188d595ea05873b2f8243d8ebbdfe62555f853b8a39b4d9b689e850f10a",
+  "schema_version": 2,
+  "semantic_digest": "c90feaf9c431cc728aced524ea7ea6ea2ffb7b960caf448b097ad0a518d01867",
   "spec": {
     "fields": {
       "age_days": "decimal",
