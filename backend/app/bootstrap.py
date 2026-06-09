@@ -28,6 +28,16 @@ async def ensure_admin_user(db: AsyncSession) -> None:
         )
         return
 
+    # ADMIN_PASSWORD_HASH must be a bcrypt hash, not a plaintext password. Refuse
+    # to seed an unloginnable/insecure admin from a misconfigured value.
+    if not settings.admin_password_hash.startswith(("$2a$", "$2b$", "$2y$")):
+        logger.error(
+            "admin_bootstrap_skipped",
+            reason="ADMIN_PASSWORD_HASH is not a bcrypt hash (expected a $2b$… value). "
+            "Generate one with `make hash-password`.",
+        )
+        return
+
     user = await UserService.create(
         db,
         email=settings.admin_email,

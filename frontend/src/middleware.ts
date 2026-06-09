@@ -9,5 +9,8 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/((?!login).*)"],
+  // Cover both the bare /admin dashboard and its sub-routes (except the login
+  // page). Without the standalone "/admin", a logged-out hit to the dashboard
+  // root skipped the edge redirect.
+  matcher: ["/admin", "/admin/((?!login).*)"],
 };

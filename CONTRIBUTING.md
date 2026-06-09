@@ -23,8 +23,15 @@ agents (and humans) should follow when extending the codebase.
 
 ## Branch and commit conventions
 
-- Branch off `main` with a short descriptive name (e.g. `add-search`,
-  `fix-csrf-cookie-bug`).
+- Feature/fix work: branch off `main` with a short `fix/*` or `feat/*`
+  name (e.g. `feat/add-search`, `fix/csrf-cookie-bug`). These are
+  short-lived — they merge to `main` and get deleted.
+- `example/<recipe>` branches are the exception: they are **long-lived**
+  worked demonstrations of a single recipe (off `main`), kept so people
+  can `git checkout` and diff them against `main`. They are not merged to
+  `main`. A whole application or a Flatpack promotion is too big for a
+  branch — it gets its own repo instead (see the README's "Worked
+  examples and branches").
 - Commit messages are short imperative ("Add X", "Fix Y"). Multi-topic
   commits use semicolon separators ("Add X; refactor Y"). Wrap bodies at
   ~72 cols.

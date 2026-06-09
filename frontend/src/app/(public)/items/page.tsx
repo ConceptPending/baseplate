@@ -4,13 +4,19 @@ import { StatusPill } from "@/components/ui/StatusPill";
 import type { Item } from "@/lib/types";
 
 async function getItems(): Promise<Item[]> {
+  // On failure we render an empty list, but never silently — a swallowed error
+  // here hides a down backend from operators (see CLAUDE.md "patterns to avoid").
   try {
     const res = await fetch(`${API_BASE}/api/public/items`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.error(`getItems: backend returned ${res.status}`);
+      return [];
+    }
     return res.json();
-  } catch {
+  } catch (err) {
+    console.error("getItems: failed to reach backend", err);
     return [];
   }
 }

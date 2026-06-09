@@ -306,10 +306,27 @@ For larger guided transformations, see [`docs/recipes/`](docs/recipes/):
 - **[SSO via OpenID Connect](docs/recipes/sso-oidc.md)** — log in via Google Workspace (canonical) or Microsoft Entra / generic OIDC. Domain-allowlisted, additive to local password auth. The first Internal Tools recipe.
 - **[User-management admin page](docs/recipes/admin-users.md)** — admin UI for inviting + deactivating other admins. Refuses to demote or deactivate the last active admin. Pairs with the SSO recipe.
 - **[Email intake → admin review queue](docs/recipes/email-intake.md)** — scheduled IMAP poll turns an inbox into a submission queue. Composes with the public-submission recipe.
+- **[Lifecycle entity with a verified state machine](docs/recipes/lifecycle-state-machine.md)** — model an entity's lifecycle (states + role-gated, guarded transitions) as a declarative spec the engine enforces, rendered to a human-readable diagram and proven by a property-based test suite. An executable approval-workflow / separation-of-duties control.
 
 More recipes welcome — see [`docs/recipes/README.md`](docs/recipes/README.md) for the format and what's planned.
 
-**See a recipe applied**: [`baseplate-example-feedback`](https://github.com/ConceptPending/baseplate-example-feedback) is a working app — public feedback form + admin review queue — built by taking Baseplate v0.1.0, removing the `Item` example, and applying the public-submission recipe. Roughly 12 file changes, the same kind of work an LLM following the recipe would produce.
+### Worked examples and branches
+
+A recipe ships as a *doc* in [`docs/recipes/`](docs/recipes/). Most also have a **runnable demonstration**, which lives in one of two places by a single rule:
+
+- **Compact single-recipe layer → an `example/<recipe>` branch of this repo.** Branch off `main`, apply one recipe, keep it as a long-lived reference you can `git checkout` and diff against `main`.
+- **A whole application → its own repo.** Full apps and Flatpack→Baseplate promotions are too big for a branch.
+
+| Recipe | Runnable example |
+| --- | --- |
+| `audit-log` | `example/audit-log` branch |
+| `admin-users` | `example/admin-users` branch |
+| `public-submission-and-admin-queue` | [`baseplate-example-feedback`](https://github.com/ConceptPending/baseplate-example-feedback) repo (feedback form + review queue) |
+| `lifecycle-state-machine` | `example/state-machine` branch (submission moderation) + the `flatpack-invoice-review-example` repo (batch review) |
+| `sso-oidc`, `email-intake` | doc only, for now |
+| *(Flatpack promotion, not a recipe)* | [`flatpack-invoice-review-example`](https://github.com/ConceptPending/flatpack-invoice-review-example) repo |
+
+**Branch convention:** `main` is the lean base plus recipe docs; `example/*` are the long-lived recipe demonstrations above; everything else is a short-lived `fix/*` or `feat/*` branch that merges to `main` and is deleted. (See [`docs/flatpack-archetype-to-recipe-map.md`](docs/flatpack-archetype-to-recipe-map.md) for which Flatpack archetypes map to which recipes and example apps.)
 
 ### Adding a new domain model
 
