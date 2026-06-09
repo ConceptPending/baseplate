@@ -26,10 +26,12 @@ def upgrade() -> None:
         sa.Column("password_hash", sa.String(255), nullable=False),
         sa.Column("is_admin", sa.Boolean, nullable=False, server_default="false"),
         sa.Column(
-            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(),
+            nullable=False,
         ),
         sa.Column(
-            "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+            "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(),
+            nullable=False,
         ),
     )
     op.create_index("ix_users_email", "users", ["email"], unique=True)
