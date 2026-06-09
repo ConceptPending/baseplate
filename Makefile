@@ -47,14 +47,21 @@ venv:
 install-hooks:
 	pre-commit install
 
-# Regenerate frontend TypeScript types from the FastAPI OpenAPI spec.
-# Run after changes to backend Pydantic schemas. The output file is
-# committed so LLMs and tests can rely on it without running the
-# generator. CI doesn't run this — drift gets caught at next manual
-# regen + the resulting tsc errors.
+# Regenerate frontend TypeScript types from the FastAPI OpenAPI spec. Run after
+# changing backend Pydantic schemas. The output is committed (so tools/tests can
+# rely on it without running the generator) and CI enforces freshness — the
+# "API types" job regenerates and fails on any diff. Don't hand-edit the output.
 generate-client:
 	cd backend && DEBUG=true PYTHONPATH=. $(PY) scripts/dump_openapi.py > /tmp/baseplate-openapi.json
 	cd frontend && npx openapi-typescript /tmp/baseplate-openapi.json -o src/lib/api-types.ts
+	cd frontend && { \
+		printf '%s\n' \
+			'// AUTO-GENERATED from the backend OpenAPI spec — DO NOT EDIT BY HAND.' \
+			'// Regenerate with `make generate-client` after changing backend Pydantic schemas.' \
+			'// CI rejects hand-edits and stale output (the "API types" job).' \
+			''; \
+		cat src/lib/api-types.ts; \
+	} > src/lib/api-types.ts.tmp && mv src/lib/api-types.ts.tmp src/lib/api-types.ts
 	rm -f /tmp/baseplate-openapi.json
 
 migrate:
