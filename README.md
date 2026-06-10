@@ -7,7 +7,7 @@
 
 > **Too important for spreadsheets. Too specific for SaaS.**
 
-A small, production-shaped full-stack foundation **designed to be safely extended by AI coding agents**.
+A small, production-shaped full-stack foundation **designed to be safely extended by AI coding agents** — and instrumented so that AI drift can't hide.
 
 Most starter templates are designed for humans to read once and forget. This one is designed to be re-read by an LLM every session. The codebase is deliberately small enough to fit in a coding agent's context window, with conventions, gotchas, and extension recipes documented in [CLAUDE.md](CLAUDE.md) so the next change lands correctly the first time.
 
@@ -18,6 +18,24 @@ Most starter templates are designed for humans to read once and forget. This one
 Coding agents are very good at extending clear patterns and very bad at inventing safe foundations. Baseplate gives the agent the boring decisions already made — cookie auth + CSRF, service-layer data access, migrations, typed API boundaries, tests, Docker, documented extension recipes — so the next change is "extend this," not "invent this."
 
 The goal isn't to include every feature. It's to keep the base small enough that both humans and agents can hold it in their heads.
+
+## The failure mode: AI drift
+
+Agent-extended codebases rarely fail loudly. They **drift**: each change is locally plausible, green in CI, easy to approve — and quietly corrosive in aggregate. A schema changes and a hand-written client type stops matching it. A migration never gets written because the tests run on a different database. An auth check gets "simplified" away three refactors after anyone remembered why it was there. A business rule loosens and nothing renders the rules anywhere a human owner actually reads them.
+
+You can't *prevent* drift — not while humans and agents keep shipping. Baseplate's position is that you can make it **impossible to hide**. Every claim below maps to a mechanical gate that fails loudly, on the commit where the drift happens:
+
+| Drift | The gate that catches it |
+|---|---|
+| **API-contract drift** — backend schemas change, frontend types don't | The "API types" CI job regenerates the typed client from the live OpenAPI spec and fails on any diff. Hand-written request/response types can't drift because there are none. |
+| **Migration drift** — a model changes, the migration is forgotten | CI applies every migration to a real Postgres, then runs `alembic check` to prove the models match the migrated schema. |
+| **Business-rule drift** — lifecycle rules change without an owner noticing | Applying the [lifecycle recipe](docs/recipes/lifecycle-state-machine.md) adds: rules as a declarative spec the engine enforces, property-based tests that hammer the invariants with random event sequences, a plain-English rendering of the rules that fails CI when stale, and a behavioural fingerprint that changes only when the rules change — so a rule change can never pass as a copy-edit. |
+| **Deployment drift** — Docker/env claims rot as the code moves | `make check-portability` mechanically asserts the portability contract in CI. |
+| **Convention drift** — agent output slowly diverges from house patterns | [CLAUDE.md](CLAUDE.md) is designed to be re-read by the agent every session (conventions, gotchas, anti-patterns), backed by lint and typecheck gates. |
+
+> **This isn't hypothetical.** The API-types gate caught real drift in this repository *on the day it was added*: an earlier PR had added a health endpoint without regenerating the client. Type checks were green. Tests were green. The contract had silently diverged, and nothing in the conventional pipeline would ever have said so ([#55](https://github.com/ConceptPending/baseplate/pull/55)).
+
+The discipline generalises: when you add a claim, add the gate that keeps it honest.
 
 ## Why one-off apps matter now
 
@@ -59,6 +77,7 @@ If you don't have a Flatpack yet but your idea is small enough that you're not s
 
 ## Who this is for
 
+- **Teams adopting AI coding agents** who want the velocity without accumulating invisible risk — the drift gates make agent output reviewable by construction.
 - **Solo founders** prototyping a real product with LLM assistance — who don't want to trust the agent to invent auth, CSRF, and deployment from scratch.
 - **Consultants building bespoke internal tools** — start every client engagement from the same production-shaped foundation. Faster delivery, fewer auth/deploy mistakes, easier handover, and the client owns the code outright.
 - **Domain experts with technical help** — a lawyer, researcher, or operator working with a technical collaborator (human or LLM) on a custom workflow tool.
@@ -78,7 +97,7 @@ If you don't have a Flatpack yet but your idea is small enough that you're not s
 1. Clone the repo. The example `Item` model is a full vertical slice (model → migration → service → routes → frontend page).
 2. Point your coding agent at [`CLAUDE.md`](CLAUDE.md). It reads conventions, dev commands, gotchas, and anti-patterns up front.
 3. Follow the [10-step recipe](#adding-a-new-domain-model) for adding your own domain models. The agent has every pattern it needs without inventing one from scratch.
-4. Tests + lint + CI catch the mistakes coding agents typically make.
+4. Tests + lint + the [drift gates](#the-failure-mode-ai-drift) catch the mistakes coding agents typically make — including the ones that stay green in a conventional pipeline.
 
 ## Stack
 
