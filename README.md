@@ -119,7 +119,7 @@ When (if) you need it, see [docs/growth-paths/multi-tenant.md](docs/growth-paths
 cp .env.example backend/.env
 cp .env.example frontend/.env.local  # only the API_URL line
 
-make install         # pip install backend deps + npm install frontend deps
+make install         # create backend/.venv, install backend + frontend deps
 make db              # start Postgres 16 via Docker on port 5433
 make migrate         # run Alembic migrations
 make hash-password   # generate a bcrypt hash, paste into backend/.env as ADMIN_PASSWORD_HASH
@@ -169,8 +169,9 @@ Open `http://localhost:3001/admin/login` and log in with the username/password y
 │   │   │   └── layout/         # Header, Footer
 │   │   ├── lib/
 │   │   │   ├── api.ts          # fetchAPI wrapper + typed endpoint functions
+│   │   │   ├── api-types.ts    # Generated from backend OpenAPI (make generate-client) — don't edit
 │   │   │   ├── auth.ts         # useRequireAuth() hook
-│   │   │   ├── types.ts        # TypeScript interfaces
+│   │   │   ├── types.ts        # Friendly aliases re-exported from generated api-types.ts
 │   │   │   ├── constants.ts    # Site name, description
 │   │   │   └── server-config.ts # Server-side API_BASE from env
 │   │   └── middleware.ts       # Redirects unauthenticated /admin/* to /login
@@ -292,6 +293,8 @@ async def create_item(data: ItemCreate, admin=Depends(get_current_admin), db=Dep
 | `make test-frontend`         | `vitest run`                                    |
 | `make lint`                  | ruff (backend) + tsc + ESLint (frontend)        |
 | `make hash-password`         | Interactive bcrypt hash generator                |
+| `make check-portability`     | Assert the deployment portability contract (CI gate) |
+| `make verify-promotion`      | Check a promoted Flatpack against its reference artifact |
 | `make stop`                  | Kill dev servers + stop Docker                  |
 | `make restart`               | Stop then start everything                      |
 
@@ -351,11 +354,20 @@ This is the most common operation. Replace "Item" or add alongside it.
    ```
    Alembic's `env.py` imports `Base` from here, so any model that inherits `Base` is auto-detected.
 
-3. **Generate the migration**:
+3. **Generate the migration** — Postgres must be running, because autogenerate
+   diffs your models against the live database. The full sequence:
    ```bash
-   make migrate-new msg="add widgets table"
-   make migrate
+   make db                                   # start Postgres if it isn't already up
+   make migrate-new msg="add widgets table"  # autogenerate from your models
+   #   ↳ now open the new file in backend/alembic/versions/ and read it
+   make migrate                              # apply it to Postgres
+   make test-backend                         # sanity check
    ```
+   Autogenerate is a starting point, not a verdict — always read the generated
+   file before committing. And note the SQLite/Postgres gap: `make test-backend`
+   runs on SQLite while migrations target Postgres, so **a green test run does not
+   prove the migration is valid**. If you reach for a Postgres-specific column
+   type, apply the migration against Postgres (`make migrate`) to confirm it.
 
 4. **Add schemas** in `backend/app/schemas/widget.py`:
    ```python
@@ -366,6 +378,10 @@ This is the most common operation. Replace "Item" or add alongside it.
    class WidgetCreate(BaseModel):
        title: str
        count: int = 0
+
+   class WidgetUpdate(BaseModel):
+       title: str | None = None
+       count: int | None = None
 
    class WidgetResponse(BaseModel):
        id: UUID
@@ -386,16 +402,25 @@ This is the most common operation. Replace "Item" or add alongside it.
    app.include_router(widget.router)
    ```
 
-8. **Add the TypeScript type** in `frontend/src/lib/types.ts`:
-   ```typescript
-   export interface Widget {
-     id: string;
-     title: string;
-     count: number;
-     created_at: string;
-     updated_at: string;
-   }
+8. **Regenerate the API types, then alias them** — never hand-write request/response
+   shapes. They're generated from the backend's OpenAPI spec so the frontend can't
+   drift from the Pydantic models (`tsc` only protects you if the types are generated,
+   not typed by hand):
+   ```bash
+   make generate-client   # rewrites frontend/src/lib/api-types.ts from the backend schemas
    ```
+   Then add friendly aliases in `frontend/src/lib/types.ts`, which re-exports the
+   generated types (`components` is already imported at the top of that file) — don't
+   define interfaces by hand here:
+   ```typescript
+   export type WidgetResponse = components["schemas"]["WidgetResponse"];
+   export type WidgetCreate = components["schemas"]["WidgetCreate"];
+   export type WidgetUpdate = components["schemas"]["WidgetUpdate"];
+   ```
+   Name aliases by their role at the boundary (`WidgetResponse`, `WidgetCreate`,
+   `WidgetUpdate`) rather than a bare `Widget`, so API-response, create-input, and
+   edit shapes stay distinct. (The older `Item` slice aliases its response as plain
+   `Item` — prefer the explicit form in new code.)
 
 9. **Add API functions** in `frontend/src/lib/api.ts` — follow the Item functions pattern.
 

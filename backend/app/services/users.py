@@ -4,6 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 
+# Verified against when a login's email doesn't match any user, so the
+# missing-user and wrong-password paths take the same time (no
+# user-enumeration timing oracle).
+_DUMMY_HASH = bcrypt.hashpw(b"timing-equalizer", bcrypt.gensalt())
+
 
 class UserService:
     @staticmethod
@@ -48,6 +53,7 @@ class UserService:
         two cases to avoid user enumeration via response codes or messages."""
         user = await UserService.get_by_email(db, email)
         if not user:
+            bcrypt.checkpw(password.encode(), _DUMMY_HASH)
             return None
         if not bcrypt.checkpw(password.encode(), user.password_hash.encode()):
             return None

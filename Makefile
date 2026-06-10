@@ -1,4 +1,18 @@
-.PHONY: dev dev-backend dev-frontend db migrate lint install install-hooks generate-client stop restart verify-promotion check-portability
+.PHONY: dev dev-backend dev-frontend db migrate lint install venv install-hooks generate-client stop restart verify-promotion check-portability
+
+# One canonical interpreter for every target. PY resolves to the backend venv if
+# it exists, else the bootstrap Python ($(PYTHON)). $(abspath ...) keeps the path
+# valid after a `cd backend`. Tools run as `$(PY) -m <tool>` so they work whether
+# or not the venv is on your PATH, and avoid PATH ambiguity with a global
+# executable from a different interpreter. Override either on the command line:
+#   make test-backend PY=/path/to/python      make install PYTHON=python3.12
+PYTHON ?= python3
+VENV := backend/.venv
+VENV_PY := $(abspath $(VENV)/bin/python)
+ifeq ($(OS),Windows_NT)
+VENV_PY := $(abspath $(VENV)/Scripts/python.exe)
+endif
+PY := $(if $(wildcard $(VENV_PY)),$(VENV_PY),$(PYTHON))
 
 # Start everything
 dev:
@@ -8,41 +22,61 @@ db:
 	docker compose up -d postgres
 
 dev-backend:
-	cd backend && PYTHONPATH=. uvicorn app.main:app --reload --port 8001
+	cd backend && PYTHONPATH=. $(PY) -m uvicorn app.main:app --reload --port 8001
 
 dev-frontend:
 	cd frontend && npm run dev -- --port 3001
 
-install:
-	cd backend && pip install -e ".[dev]"
+# Deterministic from a clean checkout: create backend/.venv if absent, then
+# install backend deps (into that venv) + frontend deps. Uses $(VENV_PY)
+# directly — not $(PY), which resolved before the venv existed — so a first-run
+# install populates the freshly-created venv rather than an arbitrary
+# interpreter. No more PEP 668 "externally-managed-environment" surprises.
+install: venv
+	cd backend && $(VENV_PY) -m pip install -e ".[dev]"
 	cd frontend && npm install
+
+# Create the backend virtualenv (idempotent) and upgrade its packaging tools.
+venv:
+	@command -v $(PYTHON) >/dev/null 2>&1 || { \
+		echo "error: '$(PYTHON)' not found — install Python 3 or run 'make install PYTHON=/path/to/python3'"; \
+		exit 1; }
+	@test -x "$(VENV_PY)" || $(PYTHON) -m venv "$(VENV)"
+	@"$(VENV_PY)" -m pip install --upgrade pip
 
 install-hooks:
 	pre-commit install
 
-# Regenerate frontend TypeScript types from the FastAPI OpenAPI spec.
-# Run after changes to backend Pydantic schemas. The output file is
-# committed so LLMs and tests can rely on it without running the
-# generator. CI doesn't run this — drift gets caught at next manual
-# regen + the resulting tsc errors.
+# Regenerate frontend TypeScript types from the FastAPI OpenAPI spec. Run after
+# changing backend Pydantic schemas. The output is committed (so tools/tests can
+# rely on it without running the generator) and CI enforces freshness — the
+# "API types" job regenerates and fails on any diff. Don't hand-edit the output.
 generate-client:
-	cd backend && DEBUG=true PYTHONPATH=. python scripts/dump_openapi.py > /tmp/baseplate-openapi.json
+	cd backend && DEBUG=true PYTHONPATH=. $(PY) scripts/dump_openapi.py > /tmp/baseplate-openapi.json
 	cd frontend && npx openapi-typescript /tmp/baseplate-openapi.json -o src/lib/api-types.ts
+	cd frontend && { \
+		printf '%s\n' \
+			'// AUTO-GENERATED from the backend OpenAPI spec — DO NOT EDIT BY HAND.' \
+			'// Regenerate with `make generate-client` after changing backend Pydantic schemas.' \
+			'// CI rejects hand-edits and stale output (the "API types" job).' \
+			''; \
+		cat src/lib/api-types.ts; \
+	} > src/lib/api-types.ts.tmp && mv src/lib/api-types.ts.tmp src/lib/api-types.ts
 	rm -f /tmp/baseplate-openapi.json
 
 migrate:
-	cd backend && PYTHONPATH=. alembic upgrade head
+	cd backend && PYTHONPATH=. $(PY) -m alembic upgrade head
 
 migrate-new:
-	cd backend && PYTHONPATH=. alembic revision --autogenerate -m "$(msg)"
+	cd backend && PYTHONPATH=. $(PY) -m alembic revision --autogenerate -m "$(msg)"
 
 lint:
-	cd backend && ruff check app/ tests/
+	cd backend && $(PY) -m ruff check app/ tests/
 	cd frontend && npx tsc --noEmit
 	cd frontend && npm run lint
 
 test-backend:
-	cd backend && PYTHONPATH=. pytest -v
+	cd backend && PYTHONPATH=. $(PY) -m pytest -v
 
 test-frontend:
 	cd frontend && npx vitest run
@@ -59,16 +93,16 @@ restart: stop
 	$(MAKE) dev
 
 hash-password:
-	@python -c "import bcrypt, getpass; print(bcrypt.hashpw(getpass.getpass('Password: ').encode(), bcrypt.gensalt()).decode())"
+	@$(PY) -c "import bcrypt, getpass; print(bcrypt.hashpw(getpass.getpass('Password: ').encode(), bcrypt.gensalt()).decode())"
 
 # Verify this project honours the Flatpack it was promoted from.
 # Expects reference/original-flatpack.html in the project root.
 # See docs/promoting-a-flatpack.md.
 verify-promotion:
-	cd backend && DEBUG=true PYTHONPATH=. python scripts/verify_promotion.py ../reference/original-flatpack.html
+	cd backend && DEBUG=true PYTHONPATH=. $(PY) scripts/verify_promotion.py ../reference/original-flatpack.html
 
 # Mechanically assert the deployment portability contract (Dockerfiles read
 # $PORT, run non-root, declare healthchecks; config is env-driven; migrations
 # run on start). See DEPLOYMENT.md "Portability contract".
 check-portability:
-	python backend/scripts/check_portability.py
+	$(PY) backend/scripts/check_portability.py
