@@ -42,4 +42,8 @@ EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD curl -fsS "http://localhost:${PORT:-8001}/api/health" || exit 1
 
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}"]
+# --proxy-headers: trust X-Forwarded-For from the platform's load balancer so
+# request.client.host (and the per-IP login rate limit) sees the real client,
+# not the proxy. Only safe when the app isn't directly reachable from the
+# internet — true on Railway/Render/Fly, where traffic must enter via the LB.
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001} --proxy-headers --forwarded-allow-ips='*'"]

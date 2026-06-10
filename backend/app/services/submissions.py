@@ -6,14 +6,15 @@ system-only `expire` transition.
 
 import uuid as _uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.submission import Submission
 from app.roles import SYSTEM
 from app.schemas.submission import SubmissionCreate
-from app.statespec import GuardRejected, apply
+from app.statespec import GuardRejected, IllegalTransition, apply
 from app.statespec.submission_spec import SUBMISSION_SPEC
 
 # The synthetic actor a scheduled job presents. Humans can never hold SYSTEM,
@@ -21,10 +22,12 @@ from app.statespec.submission_spec import SUBMISSION_SPEC
 _SYSTEM_ACTOR = frozenset({SYSTEM})
 
 
-def _age_days(created_at: datetime) -> float:
+def _age_days(created_at: datetime) -> Decimal:
+    # The spec declares `age_days: decimal`, and float/Decimal comparisons
+    # raise TypeError — so supply the declared type, not a float.
     now = datetime.now(timezone.utc)
     ca = created_at if created_at.tzinfo else created_at.replace(tzinfo=timezone.utc)
-    return (now - ca).total_seconds() / 86_400
+    return Decimal(str(round((now - ca).total_seconds() / 86_400, 6)))
 
 
 class SubmissionService:
@@ -64,14 +67,29 @@ class SubmissionService:
         action: str,
         actor_roles: frozenset[str],
     ) -> Submission:
+        old_state = submission.status
         new_state = apply(
             SUBMISSION_SPEC,
             action,
-            submission.status,
+            old_state,
             actor_roles,
             SubmissionService._snapshot(submission),
         )
-        submission.status = new_state
+        # Optimistic write: only flip the row if it is still in the state the
+        # decision was made against. A concurrent transition (another admin,
+        # or the expiry job) matches zero rows instead of being silently
+        # overwritten.
+        result = await db.execute(
+            update(Submission)
+            .where(Submission.id == submission.id, Submission.status == old_state)
+            .values(status=new_state)
+            .execution_options(synchronize_session=False)
+        )
+        if result.rowcount == 0:
+            await db.rollback()
+            raise IllegalTransition(
+                f"{action!r}: submission left state {old_state!r} concurrently"
+            )
         await db.commit()
         await db.refresh(submission)
         return submission
@@ -83,10 +101,17 @@ class SubmissionService:
         re-implemented here — fresh submissions are refused by the guard and
         skipped. Returns the number expired."""
         result = await db.execute(
-            select(Submission).where(Submission.status.in_(("pending", "needs_info")))
+            select(Submission.id).where(
+                Submission.status.in_(("pending", "needs_info"))
+            )
         )
         expired = 0
-        for submission in result.scalars().all():
+        for sid in result.scalars().all():
+            # Re-fetch each row so the decision is made against its current
+            # state, not a snapshot from before earlier iterations committed.
+            submission = await SubmissionService.get_by_id(db, sid)
+            if submission is None:
+                continue
             try:
                 await SubmissionService.transition(
                     db, submission, "expire", _SYSTEM_ACTOR
@@ -94,5 +119,8 @@ class SubmissionService:
                 expired += 1
             except GuardRejected:
                 # Not stale yet — the guard is the single source of the rule.
+                continue
+            except IllegalTransition:
+                # Concurrently moved out of an open state — leave it be.
                 continue
         return expired

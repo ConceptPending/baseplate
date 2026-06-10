@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.schemas.submission import SubmissionCreate
 from app.services.submissions import SubmissionService
-from app.statespec import GuardRejected, PermissionDenied
+from app.statespec import GuardRejected, IllegalTransition, PermissionDenied
 from app.statespec.submission_spec import STALE_AFTER_DAYS
 from tests.conftest import TEST_ADMIN_EMAIL
 
@@ -110,6 +110,37 @@ async def test_guard_blocks_expiring_a_fresh_submission(db_session):
         await SubmissionService.transition(
             db_session, sub, "expire", frozenset({"system"})
         )
+
+
+@pytest.mark.asyncio
+async def test_stale_snapshot_cannot_overwrite_a_concurrent_transition(
+    db_engine, db_session
+):
+    """A decision made against a stale in-memory snapshot must refuse rather
+    than clobber a transition that landed concurrently (the expiry-job race:
+    job loads `pending`, a reviewer approves, job must not flip it to expired)."""
+    sub = await SubmissionService.create(
+        db_session, SubmissionCreate(name="x", email="x@example.com", message="hi")
+    )
+    # The refused transition rolls back db_session, expiring its objects —
+    # grab the id while it's still loadable without IO.
+    sid = sub.id
+    # Another actor approves through a different session, behind our back.
+    sf = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+    async with sf() as other:
+        concurrent = await SubmissionService.get_by_id(other, sid)
+        await SubmissionService.transition(
+            other, concurrent, "approve", frozenset({"reviewer"})
+        )
+    # Our snapshot still reads `pending`, so the engine would allow `reject` —
+    # the optimistic write is what must catch the conflict.
+    assert sub.status == "pending"
+    with pytest.raises(IllegalTransition):
+        await SubmissionService.transition(
+            db_session, sub, "reject", frozenset({"reviewer"})
+        )
+    async with sf() as s:
+        assert (await SubmissionService.get_by_id(s, sid)).status == "approved"
 
 
 @pytest.mark.asyncio

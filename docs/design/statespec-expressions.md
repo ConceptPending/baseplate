@@ -1,6 +1,7 @@
 # Design: declarative guard/invariant expressions for StateSpec
 
-**Status:** design, not yet implemented. **Scope decision:** minimal comparators
+**Status:** implemented — `backend/app/statespec/expr.py`, used by the
+submission spec. **Scope decision:** minimal comparators
 (field/literal comparisons + boolean combinators); anything richer is an opaque,
 flagged escape hatch. **Decisions locked:** typed field schema = yes; runtime
 invariant enforcement = yes; per-spec content hash = deferred to the identity

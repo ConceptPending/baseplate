@@ -54,15 +54,15 @@ This branch demonstrates the [`lifecycle-state-machine`](docs/recipes/lifecycle-
 ## Gotchas
 
 - **Ports**: backend `:8001`, frontend `:3001` — consistent across `Makefile` dev and both Dockerfiles. Railway injects `$PORT` at runtime, which the apps respect.
-- **Startup validation**: when `DEBUG=false`, the backend refuses to boot with default `JWT_SECRET`, empty `ADMIN_PASSWORD_HASH`, or default `DATABASE_URL` (`app/config.py:28-39`). Use `DEBUG=true` locally if you're skipping `.env` setup.
+- **Startup validation**: when `DEBUG=false`, the backend refuses to boot with default `JWT_SECRET`, empty `ADMIN_PASSWORD_HASH`, or default `DATABASE_URL` (`app/config.py:38-50`). Use `DEBUG=true` locally if you're skipping `.env` setup.
 - **Cookies require HTTPS in prod** (`COOKIE_SECURE=true`). Set `COOKIE_SECURE=false` for local HTTP dev.
 - **Health endpoints**: `/api/health` is readiness (does a `SELECT 1`, returns 503 if the DB is down — the Docker HEALTHCHECK target); `/api/health/live` is liveness (no DB). When you add a dependency the app can't run without, consider adding it to the readiness check.
 - **Unhandled exceptions** go through `app/main.py`'s catch-all handler → `app/observability.py:report_exception` → generic 500 (no stack leak). Wire Sentry/etc. inside `report_exception`, not at call sites. Frontend mirror: `lib/observability.ts:reportError`, used by the error boundaries and `lib/api.ts` (5xx/network only).
 - **Security headers** live in `frontend/next.config.ts` `headers()` (CSP, HSTS, frame/nosniff/referrer/permissions). If you add an external script/style/image origin, widen the matching CSP directive there or it'll be blocked.
 - **DB pool** is configured in `app/database.py` from `DB_POOL_*` settings; the sizing args are skipped for the SQLite test engine (guarded on the URL scheme).
 - **`/docs` and `/redoc`** are disabled when `DEBUG=false`. Enable with `DEBUG=true`.
-- **Backend tests use SQLite via aiosqlite** (`tests/conftest.py:14`). Don't add Postgres-specific SQL to models without verifying the migration still runs under SQLite — or update conftest to use Postgres.
-- **Test auth helper**: `tests/test_items.py:4` `_login()` — copy this pattern in new test files that hit admin endpoints.
+- **Backend tests use SQLite via aiosqlite** (`tests/conftest.py:15`). Don't add Postgres-specific SQL to models without verifying the migration still runs under SQLite — or update conftest to use Postgres.
+- **Test auth helper**: `tests/test_items.py:6` `_login()` — copy this pattern in new test files that hit admin endpoints.
 - **Vitest uses happy-dom** (not jsdom) for the DOM environment. Component tests with `@testing-library/react` work — see `__tests__/Button.test.tsx` for a template. Cleanup is registered in `__tests__/setup.ts`.
 
 ## Patterns to avoid

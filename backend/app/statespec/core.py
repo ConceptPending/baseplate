@@ -152,7 +152,10 @@ def can_fire(
     actor_roles: frozenset[str],
     entity: Mapping[str, object] | None = None,
 ) -> Decision:
-    """Pure decision function. Never mutates anything; never raises.
+    """Pure decision function. Never mutates anything, and never raises
+    TransitionError — refusals come back as a Decision. It can raise
+    ExpressionError, for a malformed guard or a missing context field:
+    that's a contract/spec bug, not a refusal.
 
     Checks, in order: action exists -> reachable from current state ->
     actor permitted -> guard holds. The ordering is deliberate and matches
