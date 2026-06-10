@@ -1,5 +1,10 @@
 # The policy artifact: a versioned contract
 
+**Frozen:** the kernel and this contract are frozen as of tag `statespec-v0.3.0`
+(2026-06-10, `schema_version: 2`). Changes are limited to genuine bugs, security
+issues, or contract defects found while integrating the control plane. The next
+envelope change bumps `schema_version` and the kernel tag together.
+
 `make spec-doc` writes `docs/specs/<name>.policy.json` for every lifecycle spec.
 This file is the **stable, machine-readable contract** an external consumer (a
 control plane, a policy-review GitHub App, an auditor tool) reads. This document
