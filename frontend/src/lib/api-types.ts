@@ -144,8 +144,38 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health */
+        /**
+         * Health
+         * @description Readiness probe — verifies the app can actually serve traffic by
+         *     round-tripping a trivial query to the database. Returns 503 if the DB is
+         *     unreachable so a load balancer / orchestrator stops routing to this
+         *     instance instead of letting requests fail. This is the endpoint the
+         *     Docker HEALTHCHECK targets.
+         */
         get: operations["health_api_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/health/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liveness
+         * @description Liveness probe — process is up and the event loop is responsive. Does
+         *     not touch the database (a DB outage shouldn't cause the orchestrator to
+         *     kill and restart an otherwise-healthy process). Use this for liveness and
+         *     `/api/health` for readiness.
+         */
+        get: operations["liveness_api_health_live_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -254,6 +284,10 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
     };
     responses: never;
@@ -556,6 +590,26 @@ export interface operations {
         };
     };
     health_api_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    liveness_api_health_live_get: {
         parameters: {
             query?: never;
             header?: never;
