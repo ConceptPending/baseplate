@@ -1,6 +1,9 @@
+import type { components } from "./api-types";
 import { getCSRFToken } from "./csrf";
 import { reportError } from "./observability";
 import type { Item, ItemCreate, ItemUpdate, LoginResponse, User } from "./types";
+
+export type AuditLogEntry = components["schemas"]["AuditLogResponse"];
 
 const BASE = "";
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -94,4 +97,11 @@ export async function deleteItem(id: string) {
 // Items (Public)
 export async function getPublicItems() {
   return fetchAPI<Item[]>("/api/public/items");
+}
+
+// Audit log (Admin)
+export async function getAuditLog() {
+  return fetchAPI<AuditLogEntry[]>("/api/admin/audit-log", {
+    credentials: "include",
+  });
 }

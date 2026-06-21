@@ -1,5 +1,11 @@
 # Recipe: Audit log
 
+> ✅ **Applied & tested on this branch (`example/audit-log`).** This is not just
+> a prose recipe here — it's the recipe applied to the base, with passing
+> backend tests (`backend/tests/test_audit_log.py`) and a frontend viewer.
+> Diff against `main` to see exactly the ~9 files the recipe touches. Run
+> `make test-backend && make test-frontend` to confirm it's green.
+
 Record who did what, when. Useful for compliance work, case management,
 internal review queues, or anything where "show me everything an admin
 did to this record" is a real question.
