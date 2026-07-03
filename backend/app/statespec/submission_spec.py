@@ -66,7 +66,7 @@ SUBMISSION_SPEC = StateSpec(
             sources=("pending",),
             dest="approved",
             roles=frozenset({REVIEWER}),
-            label="Accept and publish the submission.",
+            label="Approve and publish the submission to the public site.",
         ),
         Transition(
             name="reject",

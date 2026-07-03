@@ -35,7 +35,7 @@ stateDiagram-v2
 | --- | --- | --- | --- | --- |
 | **request_info** — Ask the submitter for more information. | pending | needs_info | reviewer | — |
 | **provide_info** — Record that the requested information arrived; back to the queue. | needs_info | pending | reviewer | — |
-| **approve** — Accept and publish the submission. | pending | approved | reviewer | — |
+| **approve** — Approve and publish the submission to the public site. | pending | approved | reviewer | — |
 | **reject** — Decline the submission (final). | pending | rejected | reviewer | — |
 | **expire** — Auto-close a stale submission (scheduled job, not a person). | pending, needs_info | expired | system | age_days ≥ 30 |
 
