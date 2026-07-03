@@ -12,8 +12,8 @@ stateDiagram-v2
     needs_info --> pending: provide_info (reviewer)
     pending --> approved: approve (reviewer)
     pending --> rejected: reject (reviewer)
-    pending --> expired: expire (system) [age_days ≥ 30]
-    needs_info --> expired: expire (system) [age_days ≥ 30]
+    pending --> expired: expire (system) [age_days ≥ 21]
+    needs_info --> expired: expire (system) [age_days ≥ 21]
     approved --> [*]
     expired --> [*]
     rejected --> [*]
@@ -37,7 +37,7 @@ stateDiagram-v2
 | **provide_info** — Record that the requested information arrived; back to the queue. | needs_info | pending | reviewer | — |
 | **approve** — Approve and publish the submission to the public site. | pending | approved | reviewer | — |
 | **reject** — Decline the submission (final). | pending | rejected | reviewer | — |
-| **expire** — Auto-close a stale submission (scheduled job, not a person). | pending, needs_info | expired | system | age_days ≥ 30 |
+| **expire** — Auto-close a stale submission (scheduled job, not a person). | pending, needs_info | expired | system | age_days ≥ 21 |
 
 ## Invariants
 

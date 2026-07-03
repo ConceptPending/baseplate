@@ -26,7 +26,7 @@ __all__ = ["SUBMISSION_SPEC", "STALE_AFTER_DAYS"]
 
 # A pending/awaiting-info submission older than this is auto-expired by the
 # scheduled job. The threshold is enforced by a guard, not left to convention.
-STALE_AFTER_DAYS = 30
+STALE_AFTER_DAYS = 21
 
 _STATES = {
     "pending": "Submitted and awaiting moderation.",
@@ -92,4 +92,5 @@ SUBMISSION_SPEC = StateSpec(
             "The status is always one of the declared states.",
         ),
     ),
+    version=2,
 )
