@@ -1,5 +1,11 @@
 # The policy artifact: a versioned contract
 
+> **Authoritative home moved (2026-07-03):** the kernel and this contract now
+> live in [`ConceptPending/statespec`](https://github.com/ConceptPending/statespec)
+> as of `statespec-v0.4.0` (which adds `title` to `canonical()` — digests and
+> `schema_version: 2` unchanged). This in-tree copy is frozen at
+> `statespec-v0.3.0` alongside the reference example and is no longer updated.
+
 **Frozen:** the kernel and this contract are frozen as of tag `statespec-v0.3.0`
 (2026-06-10, `schema_version: 2`). Changes are limited to genuine bugs, security
 issues, or contract defects found while integrating the control plane. The next

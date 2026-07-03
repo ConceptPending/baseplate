@@ -1,5 +1,11 @@
 # Design: declarative guard/invariant expressions for StateSpec
 
+> **Authoritative home moved (2026-07-03):** the kernel (and this doc's
+> authoritative copy) now live in
+> [`ConceptPending/statespec`](https://github.com/ConceptPending/statespec)
+> as of `statespec-v0.4.0`. This in-tree copy is frozen at `statespec-v0.3.0`
+> alongside the reference example.
+
 **Status:** implemented — `backend/app/statespec/expr.py`, used by the
 submission spec. **Scope decision:** minimal comparators
 (field/literal comparisons + boolean combinators); anything richer is an opaque,
