@@ -20,4 +20,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ConceptPending/statespec-diff-action@main
+      - uses: ConceptPending/statespec-diff-action@cdb2ee8f277d14f973aa5fcdbdeb04468c8f1b6a # v1 (pin to tag once the repo is tagged)
