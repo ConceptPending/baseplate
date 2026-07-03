@@ -120,6 +120,100 @@ export interface paths {
         patch: operations["update_item_api_admin_items__item_id__patch"];
         trace?: never;
     };
+    "/api/admin/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Submissions */
+        get: operations["list_submissions_api_admin_submissions_get"];
+        put?: never;
+        /** Create Submission */
+        post: operations["create_submission_api_admin_submissions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/submissions/lifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Lifecycle */
+        get: operations["get_lifecycle_api_admin_submissions_lifecycle_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/submissions/{submission_id}/transition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transition Submission */
+        post: operations["transition_submission_api_admin_submissions__submission_id__transition_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Users
+         * @description All users with their roles — so an admin can see who can do what before
+         *     assigning.
+         */
+        get: operations["list_users_api_admin_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{user_id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set User Roles
+         * @description Replace a user's lifecycle roles. Refuses unknown roles (422) and any
+         *     change that would remove the last admin holding a role (409).
+         */
+        put: operations["set_user_roles_api_admin_users__user_id__roles_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/public/items": {
         parameters: {
             query?: never;
@@ -188,10 +282,30 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** FieldInfo */
+        FieldInfo: {
+            /** Name */
+            name: string;
+            /** Type */
+            type: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** InvariantInfo */
+        InvariantInfo: {
+            /** Name */
+            name: string;
+            /** Label */
+            label: string;
+            /** Text */
+            text: string;
+            /** Condition */
+            condition: {
+                [key: string]: unknown;
+            };
         };
         /** ItemCreate */
         ItemCreate: {
@@ -233,6 +347,31 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
         };
+        /** LifecycleSpecResponse */
+        LifecycleSpecResponse: {
+            /** Name */
+            name: string;
+            /** Title */
+            title: string;
+            /** Version */
+            version: number;
+            /** Semantic Digest */
+            semantic_digest: string;
+            /** Presentation Digest */
+            presentation_digest: string;
+            /** Initial */
+            initial: string;
+            /** Terminal */
+            terminal: string[];
+            /** States */
+            states: components["schemas"]["StateInfo"][];
+            /** Fields */
+            fields: components["schemas"]["FieldInfo"][];
+            /** Transitions */
+            transitions: components["schemas"]["TransitionInfo"][];
+            /** Invariants */
+            invariants: components["schemas"]["InvariantInfo"][];
+        };
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -251,6 +390,87 @@ export interface components {
              */
             message: string;
         };
+        /**
+         * RoleAssignment
+         * @description Full replacement of a user's lifecycle roles. Unknown roles and unsafe
+         *     removals are rejected by the service, not here.
+         */
+        RoleAssignment: {
+            /** Roles */
+            roles: string[];
+        };
+        /** StateInfo */
+        StateInfo: {
+            /** Id */
+            id: string;
+            /** Description */
+            description: string;
+        };
+        /** SubmissionCreate */
+        SubmissionCreate: {
+            /** Name */
+            name: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Message */
+            message: string;
+        };
+        /** SubmissionResponse */
+        SubmissionResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Message */
+            message: string;
+            /** Status */
+            status: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** SubmissionTransition */
+        SubmissionTransition: {
+            /** Action */
+            action: string;
+        };
+        /** TransitionInfo */
+        TransitionInfo: {
+            /** Name */
+            name: string;
+            /** Label */
+            label: string;
+            /** From */
+            from: string[];
+            /** To */
+            to: string;
+            /** Roles */
+            roles: string[];
+            /** Guard */
+            guard: {
+                [key: string]: unknown;
+            } | null;
+            /** Guard Text */
+            guard_text: string | null;
+        };
         /** UserResponse */
         UserResponse: {
             /**
@@ -265,6 +485,8 @@ export interface components {
             email: string;
             /** Is Admin */
             is_admin: boolean;
+            /** Roles */
+            roles: string[];
             /**
              * Created At
              * Format: date-time
@@ -556,6 +778,208 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ItemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_submissions_api_admin_submissions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_submission_api_admin_submissions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmissionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_lifecycle_api_admin_submissions_lifecycle_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LifecycleSpecResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transition_submission_api_admin_submissions__submission_id__transition_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                submission_id: string;
+            };
+            cookie?: {
+                access_token?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmissionTransition"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmissionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_users_api_admin_users_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_user_roles_api_admin_users__user_id__roles_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: {
+                access_token?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleAssignment"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
                 };
             };
             /** @description Validation Error */

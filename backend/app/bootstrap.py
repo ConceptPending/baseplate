@@ -2,6 +2,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.roles import HUMAN_ROLES
 from app.services.users import UserService
 
 logger = structlog.get_logger()
@@ -38,10 +39,14 @@ async def ensure_admin_user(db: AsyncSession) -> None:
         )
         return
 
+    # The first admin holds every human role — otherwise a fresh install has
+    # an admin who can reach the lifecycle UI but is 403'd from every
+    # transition. Grant later admins their roles deliberately.
     user = await UserService.create(
         db,
         email=settings.admin_email,
         password_hash=settings.admin_password_hash,
         is_admin=True,
+        roles=sorted(HUMAN_ROLES),
     )
     logger.info("admin_user_bootstrapped", user_id=str(user.id), email=user.email)
