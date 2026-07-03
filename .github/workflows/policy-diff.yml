@@ -1,0 +1,23 @@
+# Renders the statespec policy diff as a sticky PR comment whenever a
+# committed .policy.json artifact changes — semantic (approval-invalidating)
+# vs presentation (wording-only), in plain English.
+#
+# NOTE: the action lives in a private org repo. It resolves only if
+# ConceptPending/statespec-diff-action has Settings → Actions → Access set to
+# "accessible from repositories in the ConceptPending organization".
+name: policy-diff
+
+on:
+  pull_request:
+    paths: ["**/*.policy.json"]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  policy-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ConceptPending/statespec-diff-action@main
