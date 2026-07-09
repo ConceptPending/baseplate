@@ -1,7 +1,7 @@
 {
-  "presentation_digest": "a5765188d595ea05873b2f8243d8ebbdfe62555f853b8a39b4d9b689e850f10a",
+  "presentation_digest": "9dc9dff8bfd7cd569518360a9445d46802ec7c6952ddd1a16a584b01a34207e6",
   "schema_version": 2,
-  "semantic_digest": "c90feaf9c431cc728aced524ea7ea6ea2ffb7b960caf448b097ad0a518d01867",
+  "semantic_digest": "909afba5f0f54079ebfefbeeb0731ef9ea1ee51a1d2ed0e0b8fd88707946b160",
   "spec": {
     "fields": {
       "age_days": "decimal",
@@ -55,7 +55,7 @@
         ],
         "guard": null,
         "id": "approve",
-        "label": "Accept and publish the submission.",
+        "label": "Approve and publish the submission to the public site.",
         "name": "approve",
         "opaque": {},
         "roles": [
@@ -78,7 +78,7 @@
           "right": {
             "kind": "literal",
             "type": "int",
-            "value": 30
+            "value": 21
           }
         },
         "id": "expire",
@@ -133,7 +133,7 @@
         "to": "needs_info"
       }
     ],
-    "version": 1
+    "version": 2
   },
-  "spec_version": 1
+  "spec_version": 2
 }
