@@ -13,7 +13,7 @@ concurrency:
 jobs:
   test-backend:
     name: Backend — lint + tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: backend
@@ -35,7 +35,7 @@ jobs:
 
   test-frontend:
     name: Frontend — typecheck, lint, tests, build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: frontend
@@ -59,7 +59,7 @@ jobs:
 
   api-types:
     name: API types — generated client in sync
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -90,7 +90,7 @@ jobs:
     # executes the Alembic migrations — so nothing else proves they apply. This
     # job is the only place the real migration path runs against real Postgres.
     name: Migrations — apply cleanly to Postgres
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: backend
