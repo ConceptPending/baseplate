@@ -1,0 +1,139 @@
+{
+  "presentation_digest": "a5765188d595ea05873b2f8243d8ebbdfe62555f853b8a39b4d9b689e850f10a",
+  "schema_version": 2,
+  "semantic_digest": "c90feaf9c431cc728aced524ea7ea6ea2ffb7b960caf448b097ad0a518d01867",
+  "spec": {
+    "fields": {
+      "age_days": "decimal",
+      "status": "str"
+    },
+    "initial": "pending",
+    "invariants": [
+      {
+        "condition": {
+          "kind": "compare",
+          "left": {
+            "kind": "field",
+            "name": "status"
+          },
+          "op": "in",
+          "right": {
+            "kind": "literal",
+            "type": "list",
+            "value": [
+              "pending",
+              "needs_info",
+              "approved",
+              "rejected",
+              "expired"
+            ]
+          }
+        },
+        "id": "status_declared",
+        "label": "The status is always one of the declared states.",
+        "name": "status_declared",
+        "opaque": {}
+      }
+    ],
+    "name": "submission",
+    "states": {
+      "approved": "Accepted and published.",
+      "expired": "Auto-closed after going stale with no decision.",
+      "needs_info": "Returned to the submitter for more information.",
+      "pending": "Submitted and awaiting moderation.",
+      "rejected": "Declined by a moderator."
+    },
+    "terminal": [
+      "approved",
+      "expired",
+      "rejected"
+    ],
+    "transitions": [
+      {
+        "from": [
+          "pending"
+        ],
+        "guard": null,
+        "id": "approve",
+        "label": "Accept and publish the submission.",
+        "name": "approve",
+        "opaque": {},
+        "roles": [
+          "reviewer"
+        ],
+        "to": "approved"
+      },
+      {
+        "from": [
+          "needs_info",
+          "pending"
+        ],
+        "guard": {
+          "kind": "compare",
+          "left": {
+            "kind": "field",
+            "name": "age_days"
+          },
+          "op": "ge",
+          "right": {
+            "kind": "literal",
+            "type": "int",
+            "value": 30
+          }
+        },
+        "id": "expire",
+        "label": "Auto-close a stale submission (scheduled job, not a person).",
+        "name": "expire",
+        "opaque": {},
+        "roles": [
+          "system"
+        ],
+        "to": "expired"
+      },
+      {
+        "from": [
+          "needs_info"
+        ],
+        "guard": null,
+        "id": "provide_info",
+        "label": "Record that the requested information arrived; back to the queue.",
+        "name": "provide_info",
+        "opaque": {},
+        "roles": [
+          "reviewer"
+        ],
+        "to": "pending"
+      },
+      {
+        "from": [
+          "pending"
+        ],
+        "guard": null,
+        "id": "reject",
+        "label": "Decline the submission (final).",
+        "name": "reject",
+        "opaque": {},
+        "roles": [
+          "reviewer"
+        ],
+        "to": "rejected"
+      },
+      {
+        "from": [
+          "pending"
+        ],
+        "guard": null,
+        "id": "request_info",
+        "label": "Ask the submitter for more information.",
+        "name": "request_info",
+        "opaque": {},
+        "roles": [
+          "reviewer"
+        ],
+        "to": "needs_info"
+      }
+    ],
+    "version": 1
+  },
+  "spec_version": 1
+}

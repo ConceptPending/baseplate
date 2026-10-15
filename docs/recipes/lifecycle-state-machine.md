@@ -169,8 +169,13 @@ endpoint refuses to give it to a user, and only a job calling `apply` with
   with real transition rules. (Unused machinery is worse than none — the same
   razor Baseplate applies to multi-tenancy.)
 - **Not a concurrency control.** The Hypothesis model is single-threaded; it
-  won't catch two actors firing conflicting transitions at once. If that
-  matters, add an optimistic-lock (`version`) column and a separate test.
+  won't catch two actors firing conflicting transitions at once — the engine
+  sits above your persistence layer. When transitions are contended (two admins
+  on one queue, an admin racing the expiry job, or any transition that writes
+  more than `status`), apply the companion
+  [concurrency-safe transitions](concurrency-safe-transitions.md) recipe:
+  status compare-and-set (which the reference service already does), a `version`
+  optimistic lock, or `SELECT … FOR UPDATE`, with tests that force the race.
 - **Not a workflow *engine*.** No timers, no async orchestration, no
   persistence of in-flight processes beyond the entity's own row. It's a small,
   checkable contract — keep it that way.

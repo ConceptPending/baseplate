@@ -312,6 +312,8 @@ async def create_item(data: ItemCreate, admin=Depends(get_current_admin), db=Dep
 | `make test-frontend`         | `vitest run`                                    |
 | `make lint`                  | ruff (backend) + tsc + ESLint (frontend)        |
 | `make hash-password`         | Interactive bcrypt hash generator                |
+| `make spec-check`            | Validate state-machine specs are well-formed (CI gate) |
+| `make spec-doc`              | Regenerate `docs/specs/` from the specs (CI checks freshness) |
 | `make check-portability`     | Assert the deployment portability contract (CI gate) |
 | `make verify-promotion`      | Check a promoted Flatpack against its reference artifact |
 | `make stop`                  | Kill dev servers + stop Docker                  |

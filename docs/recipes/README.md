@@ -74,6 +74,14 @@ separation-of-duties control (SOC 2-friendly). Worked examples: the
 auto-expiry) and the standalone `flatpack-invoice-review-example` repo
 (batch review).
 
+### [Concurrency-safe state transitions](concurrency-safe-transitions.md)
+The companion to the lifecycle recipe: the state machine makes illegal
+transitions impossible for *one* actor, but sits above your persistence
+layer — it won't stop two actors racing the same read-modify-write. Three
+tiers (status compare-and-set → a `version` optimistic lock → `SELECT … FOR
+UPDATE`), with deterministic tests that force the race. For entities whose
+transitions move money, allocate inventory, or assign work.
+
 ## Suggested future recipes (not yet written)
 
 These came up in scoping but haven't landed yet. Open a PR if you
@@ -88,6 +96,11 @@ write one. Grouped by the audience that's most likely to want them.
   "restore" UI
 - **Read-only public page backed by admin CRUD** — `(public)/`-route-group
   pattern, beyond what the example `Item` already shows
+- **Cross-system reconciliation** — a periodic job that detects and repairs
+  divergence between this database and an external system of record (a payment
+  processor, a ledger). The "money at the seams" control the
+  [concurrency-safe transitions](concurrency-safe-transitions.md) recipe
+  explicitly leaves out — single-row locking can't span systems.
 
 ### Internal Tools track
 

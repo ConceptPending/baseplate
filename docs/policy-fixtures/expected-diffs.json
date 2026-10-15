@@ -1,0 +1,14 @@
+{
+  "widen-expire-guard": [
+    "version: 1 \u2192 2",
+    "transition expire: guard age_days \u2265 30 \u2192 age_days \u2265 60"
+  ],
+  "add-role-to-approve": [
+    "version: 1 \u2192 2",
+    "transition approve: roles ['reviewer'] \u2192 ['approver', 'reviewer']"
+  ],
+  "add-invariant": [
+    "version: 1 \u2192 2",
+    "+ invariant SUB-INV-OPEN"
+  ]
+}

@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend db migrate lint install venv install-hooks generate-client stop restart verify-promotion check-portability
+.PHONY: dev dev-backend dev-frontend db migrate lint install venv install-hooks generate-client stop restart verify-promotion check-portability spec-check spec-doc
 
 # One canonical interpreter for every target. PY resolves to the backend venv if
 # it exists, else the bootstrap Python ($(PYTHON)). $(abspath ...) keeps the path
@@ -80,6 +80,14 @@ test-backend:
 
 test-frontend:
 	cd frontend && npx vitest run
+
+# Validate the state-machine specs are well-formed (lifecycle recipe).
+spec-check:
+	cd backend && DEBUG=true PYTHONPATH=. $(PY) scripts/statespec.py check
+
+# Regenerate docs/specs/*.md from the specs (committed; CI checks freshness).
+spec-doc:
+	cd backend && DEBUG=true PYTHONPATH=. $(PY) scripts/statespec.py render
 
 # Stop all services
 stop:
